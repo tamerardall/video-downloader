@@ -24,6 +24,9 @@ Instagram giriş yapılmamış isteklere video vermiyor ("Instagram sent an empt
 # Seçenek 1: çerezleri doğrudan tarayıcıdan oku (Instagram'a o tarayıcıda giriş yapmış ol)
 COOKIES_FROM_BROWSER=firefox .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 
+# Flatpak tarayıcılarda profil yolunu "tarayıcı:yol" biçiminde ver (ör. Flatpak Brave)
+COOKIES_FROM_BROWSER="brave:$HOME/.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser/Default" .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+
 # Seçenek 2: Netscape formatında cookies.txt dosyası (ör. "Get cookies.txt LOCALLY" eklentisiyle dışa aktar)
 COOKIES_FILE=$HOME/.config/video-downloader/cookies.txt .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```

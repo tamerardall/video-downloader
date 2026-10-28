@@ -30,7 +30,9 @@ def test_cookie_opts(monkeypatch):
     monkeypatch.setattr(m, "COOKIES_FROM_BROWSER", "firefox")
     o = m._opts()
     assert o["cookiefile"] == "/x/cookies.txt"
-    assert o["cookiesfrombrowser"] == ("firefox",)
+    assert o["cookiesfrombrowser"] == ("firefox", None)
+    monkeypatch.setattr(m, "COOKIES_FROM_BROWSER", "brave:/p/Default")
+    assert m._opts()["cookiesfrombrowser"] == ("brave", "/p/Default")
     monkeypatch.setattr(m, "COOKIES_FILE", "")
     monkeypatch.setattr(m, "COOKIES_FROM_BROWSER", "")
     o = m._opts()

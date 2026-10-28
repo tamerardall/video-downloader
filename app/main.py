@@ -70,7 +70,9 @@ def _opts(**extra):
     if COOKIES_FILE:
         opts["cookiefile"] = COOKIES_FILE
     if COOKIES_FROM_BROWSER:
-        opts["cookiesfrombrowser"] = (COOKIES_FROM_BROWSER,)
+        # "brave" ya da "brave:/profil/yolu" (Flatpak tarayıcılar için)
+        browser, _, profile = COOKIES_FROM_BROWSER.partition(":")
+        opts["cookiesfrombrowser"] = (browser, profile or None)
     return opts
 
 
