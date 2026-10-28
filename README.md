@@ -16,6 +16,20 @@ Not: Komutlar proje klasöründen çalıştırılmalı. Düz `uvicorn` yazarsan 
 
 Tarayıcıda http://127.0.0.1:8000 aç. Güncelleme: `pip install -U yt-dlp` (siteler sık değişir).
 
+### Instagram (çerez gerekli)
+
+Instagram giriş yapılmamış isteklere video vermiyor ("Instagram sent an empty media response"). Instagram'a giriş yapılmış bir tarayıcının çerezlerini yt-dlp'ye ver:
+
+```bash
+# Seçenek 1: çerezleri doğrudan tarayıcıdan oku (Instagram'a o tarayıcıda giriş yapmış ol)
+COOKIES_FROM_BROWSER=firefox .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+
+# Seçenek 2: Netscape formatında cookies.txt dosyası (ör. "Get cookies.txt LOCALLY" eklentisiyle dışa aktar)
+COOKIES_FILE=$HOME/.config/video-downloader/cookies.txt .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Çerezler hesabına erişim sağlar: dosyayı `chmod 600` yap, repoya ekleme, kimseyle paylaşma. Mümkünse ayrı/ikincil bir Instagram hesabı kullan (yoğun indirme hesabın kısıtlanmasına yol açabilir).
+
 ## Güvenlik
 
 - Sadece http/https; kullanıcı bilgili, yerel/özel IP'li (SSRF) ve izin listesi dışı alan adları reddedilir (`ALLOWED_DOMAINS` env ile değiştirilebilir, virgülle ayrılmış).

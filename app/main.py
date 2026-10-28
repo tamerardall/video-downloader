@@ -19,6 +19,11 @@ STATIC = Path(__file__).parent / "static"
 MAX_FILESIZE = 500 * 1024 * 1024  # 500 MB
 limiter = RateLimiter(limit=10, window=60)
 API_TOKEN = os.environ.get("API_TOKEN", "")
+# Instagram vb. giriş isteyen siteler için: Netscape formatında cookies.txt yolu
+# ya da çerezlerin okunacağı tarayıcı adı (firefox, chrome, ...).
+COOKIES_FILE = os.environ.get("COOKIES_FILE", "")
+COOKIES_FROM_BROWSER = os.environ.get("COOKIES_FROM_BROWSER", "")
+LOGIN_HINTS = ("--cookies", "login required", "log in", "empty media response")
 
 app = FastAPI(title="Video Downloader", docs_url=None, redoc_url=None, openapi_url=None)
 
@@ -54,7 +59,7 @@ def _check(request: Request, url: str) -> str:
 
 
 def _opts(**extra):
-    return {
+    opts = {
         "quiet": True,
         "no_warnings": True,
         "noplaylist": True,
@@ -62,6 +67,18 @@ def _opts(**extra):
         "socket_timeout": 20,
         **extra,
     }
+    if COOKIES_FILE:
+        opts["cookiefile"] = COOKIES_FILE
+    if COOKIES_FROM_BROWSER:
+        opts["cookiesfrombrowser"] = (COOKIES_FROM_BROWSER,)
+    return opts
+
+
+def _error(e: Exception, default: str) -> str:
+    if any(h in str(e).lower() for h in LOGIN_HINTS):
+        return ("Bu site giriş yapmayı istiyor. Sunucuda COOKIES_FILE veya "
+                "COOKIES_FROM_BROWSER ile çerez tanımlayın (README'ye bakın).")
+    return default
 
 
 @app.post("/api/info")
@@ -74,8 +91,8 @@ async def info(body: UrlBody, request: Request):
 
     try:
         data = await asyncio.to_thread(run)
-    except Exception:
-        raise HTTPException(422, "Video bilgisi alınamadı.")
+    except Exception as e:
+        raise HTTPException(422, _error(e, "Video bilgisi alınamadı."))
     return {
         "title": data.get("title"),
         "uploader": data.get("uploader"),
@@ -104,9 +121,9 @@ async def download(body: UrlBody, request: Request, bg: BackgroundTasks):
         files = [f for f in tmp.iterdir() if f.is_file()]
         if not files:
             raise RuntimeError("no file")
-    except Exception:
+    except Exception as e:
         shutil.rmtree(tmp, ignore_errors=True)
-        return JSONResponse({"detail": "İndirme başarısız."}, status_code=422)
+        return JSONResponse({"detail": _error(e, "İndirme başarısız.")}, status_code=422)
 
     bg.add_task(shutil.rmtree, tmp, True)
     f = files[0]
