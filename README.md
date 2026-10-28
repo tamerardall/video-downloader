@@ -9,8 +9,10 @@ sudo dnf install -y python3 ffmpeg   # ffmpeg için RPM Fusion gerekebilir
 git clone https://github.com/tamerardall/video-downloader && cd video-downloader
 python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
-uvicorn app.main:app --host 127.0.0.1 --port 8000
+.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
+
+Not: Komutlar proje klasöründen çalıştırılmalı. Düz `uvicorn` yazarsan ve venv aktif değilse sistemdeki `/usr/bin/uvicorn` çalışır ve `ModuleNotFoundError: No module named 'yt_dlp'` hatası verir; bu yüzden `.venv/bin/uvicorn` kullan (ya da önce `. .venv/bin/activate`).
 
 Tarayıcıda http://127.0.0.1:8000 aç. Güncelleme: `pip install -U yt-dlp` (siteler sık değişir).
 
@@ -27,9 +29,11 @@ Tarayıcıda http://127.0.0.1:8000 aç. Güncelleme: `pip install -U yt-dlp` (si
 1. Fedora ve iPhone'a [Tailscale](https://tailscale.com/download) kur, aynı hesapla giriş yap. Fedora'nın Tailscale adresini al: `tailscale ip -4` (örn. `100.x.y.z`).
 2. Fedora'da gizli anahtar üret ve uygulamayı Tailscale adresine bağlayarak başlat:
    ```bash
+   cd video-downloader
    export API_TOKEN=$(openssl rand -hex 24); echo $API_TOKEN   # bir yere not al
-   uvicorn app.main:app --host $(tailscale ip -4) --port 8000
+   .venv/bin/uvicorn app.main:app --host $(tailscale ip -4) --port 8000
    ```
+   `API_TOKEN` aynı terminalde export edilmeli; yeni terminal açarsan tekrar ayarla (yeni anahtar üretirsen Kısayol'daki anahtarı da güncelle).
    Not: `--host 0.0.0.0` kullanma, sadece Tailscale arayüzüne bağla. Firewalld varsa 8000'i yalnızca `tailscale0` bölgesinde aç.
 3. iPhone'da **Kısayollar → Yeni Kısayol**, adı "Video İndir". Ayarlardan **Paylaşım Sayfasında Göster** aç, kabul edilen türlerden sadece **URL** ve **Metin** kalsın. Eylemler:
    1. **Get URLs from Input** (Girdiden URL'leri al) ya da *Shortcut Input*
