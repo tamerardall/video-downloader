@@ -5,6 +5,7 @@ import mimetypes
 import os
 import re
 import shutil
+import sys
 import tempfile
 from pathlib import Path
 
@@ -30,6 +31,13 @@ API_TOKEN = os.environ.get("API_TOKEN", "")
 COOKIES_FILE = os.environ.get("COOKIES_FILE", "")
 COOKIES_FROM_BROWSER = os.environ.get("COOKIES_FROM_BROWSER", "")
 LOGIN_HINTS = ("--cookies", "login required", "log in", "empty media response")
+# YouTube için JS çalışma ortamı (pip "deno" paketi). Sunucu venv etkinleştirilmeden
+# başlatıldığında .venv/bin PATH'te olmaz, bu yüzden yol açıkça verilir.
+DENO = str(Path(sys.executable).parent / "deno")
+FORMAT = "bv*+ba/b"
+# iPhone Fotoğraflar VP9/AV1 kaydetmiyor: H.264 + AAC tercih edilir. "res" sesten önce
+# gelmeli; yoksa YouTube'un sesli eski 360p dosyası 1080p görüntü+sesin önüne geçer.
+FORMAT_SORT = ["vcodec:h264", "res", "acodec:aac", "ext:mp4:m4a"]
 
 app = FastAPI(title="Video Downloader", docs_url=None, redoc_url=None, openapi_url=None)
 
@@ -97,6 +105,8 @@ def _opts(**extra):
         # "brave" ya da "brave:/profil/yolu" (Flatpak tarayıcılar için)
         browser, _, profile = COOKIES_FROM_BROWSER.partition(":")
         opts["cookiesfrombrowser"] = (browser, profile or None)
+    if os.path.exists(DENO):
+        opts["js_runtimes"] = {"deno": {"path": DENO}}
     return opts
 
 
@@ -138,9 +148,8 @@ async def download(body: UrlBody, request: Request, bg: BackgroundTasks):
     def run():
         opts = _opts(
             outtmpl=str(tmp / "%(id)s.%(ext)s"),
-            format="bv*+ba/b",
-            # iPhone Fotoğraflar VP9/AV1 kaydetmiyor: H.264 + AAC tercih edilir
-            format_sort=["vcodec:h264", "acodec:aac", "ext:mp4:m4a"],
+            format=FORMAT,
+            format_sort=FORMAT_SORT,
             merge_output_format="mp4",
         )
         with yt_dlp.YoutubeDL(opts) as ydl:

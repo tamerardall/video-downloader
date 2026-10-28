@@ -139,5 +139,43 @@ def test_download_prefers_iphone_codecs_and_logs(monkeypatch, caplog):
     caplog.set_level("INFO", logger="uvicorn.error")
     r = c.post("/api/download", json={"url": "https://www.instagram.com/reel/abc/"})
     assert r.status_code == 200
-    assert seen["format_sort"][:2] == ["vcodec:h264", "acodec:aac"]
+    assert seen["format_sort"][0] == "vcodec:h264" and "acodec:aac" in seen["format_sort"]
     assert "avc1.64001F" in caplog.text and "abc.mp4" in caplog.text
+
+
+def test_format_sort_picks_hd_h264_over_muxed_360p():
+    # YouTube: eski birleşik 360p (ses dahil) 1080p H.264 görüntü+sesin önüne geçmemeli;
+    # VP9/AV1 daha yüksek bit hızlı olsa da seçilmemeli (iPhone kaydetmiyor)
+    import yt_dlp
+    import app.main as m
+
+    def f(i, vc, ac, h=None, ext="mp4", tbr=1000):
+        return {"format_id": i, "url": f"http://x/{i}", "ext": ext, "vcodec": vc,
+                "acodec": ac, "height": h, "tbr": tbr}
+
+    fmts = [
+        f("18", "avc1.42001E", "mp4a.40.2", 360, tbr=444),
+        f("137", "avc1.640028", "none", 1080, tbr=3038),
+        f("399", "av01.0.08M.08", "none", 1080, tbr=1142),
+        f("248", "vp9", "none", 1080, ext="webm", tbr=4000),
+        f("140", "none", "mp4a.40.2", ext="m4a", tbr=129),
+        f("251", "none", "opus", ext="webm", tbr=160),
+    ]
+    opts = {"quiet": True, "simulate": True, "format": m.FORMAT,
+            "format_sort": m.FORMAT_SORT, "merge_output_format": "mp4"}
+    with yt_dlp.YoutubeDL(opts) as y:
+        r = y.process_ie_result({"id": "t", "title": "t", "formats": fmts, "extractor": "x",
+                                 "extractor_key": "x", "webpage_url": "http://x"},
+                                download=False)
+    assert r["format_id"] == "137+140"
+
+
+def test_deno_from_venv(monkeypatch, tmp_path):
+    # YouTube için JS çalışma ortamı; sunucu venv etkinleştirilmeden başlatılıyor
+    import app.main as m
+    deno = tmp_path / "deno"
+    deno.write_text("")
+    monkeypatch.setattr(m, "DENO", str(deno))
+    assert m._opts()["js_runtimes"] == {"deno": {"path": str(deno)}}
+    monkeypatch.setattr(m, "DENO", str(tmp_path / "yok"))
+    assert "js_runtimes" not in m._opts()

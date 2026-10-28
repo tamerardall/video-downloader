@@ -14,7 +14,9 @@ pip install -r requirements.txt
 
 Not: Komutlar proje klasöründen çalıştırılmalı. Düz `uvicorn` yazarsan ve venv aktif değilse sistemdeki `/usr/bin/uvicorn` çalışır ve `ModuleNotFoundError: No module named 'yt_dlp'` hatası verir; bu yüzden `.venv/bin/uvicorn` kullan (ya da önce `. .venv/bin/activate`).
 
-Tarayıcıda http://127.0.0.1:8000 aç. Güncelleme: `pip install -U yt-dlp` (siteler sık değişir).
+Tarayıcıda http://127.0.0.1:8000 aç. Güncelleme: `.venv/bin/pip install -U "yt-dlp[default]"` (siteler sık değişir).
+
+YouTube için yt-dlp bir JavaScript çalışma ortamı ister. `requirements.txt` bunu `deno` pip paketiyle sanal ortamın içine kurar (`.venv/bin/deno`) ve uygulama onu oradan kendisi kullanır; ayrıca bir şey kurmaya gerek yok. Bu adım eksikse YouTube "No video formats found" hatası verir.
 
 ### Instagram (çerez gerekli)
 

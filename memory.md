@@ -32,6 +32,13 @@ cd ~/Projeler/video-downloader && COOKIES_FROM_BROWSER="brave:$HOME/.var/app/com
 - `POST /api/download … 200 OK` görünüyor ama iPhone'da kayıt yoksa sorun iPhone tarafında (kodlama, Kısayol adımları).
 - `tailscale status`: iPhone bağlantısı `direct` olmalı; `relay` ise büyük dosyalarda zaman aşımı olabilir.
 
+## YouTube düzeltmesi
+
+- Sorun: "No video formats found". yt-dlp YouTube için bir JavaScript çalışma ortamı ve `yt-dlp-ejs` çözücü betiklerini istiyor; ikisi de yoktu.
+- Çözüm: `requirements.txt` → `yt-dlp[default]` (ejs dahil) ve `deno` (pip paketi, `.venv/bin/deno`). Sunucu venv etkinleştirilmeden başlatıldığı için `.venv/bin` PATH'te değil; uygulama Deno yolunu `js_runtimes` ile açıkça veriyor.
+- Format sıralaması `["vcodec:h264", "res", "acodec:aac", "ext:mp4:m4a"]` oldu. `res` sesten önce olmazsa YouTube'un sesli eski 360p dosyası (format 18), 1080p H.264 görüntü+sesin önüne geçiyordu.
+- Doğrulandı: YouTube videosu H.264 1080p + AAC, Shorts indirmesi 200 `video/mp4`; Instagram yine H.264.
+
 ## Açık konular
 
 - Eski `worktree-*` dalları GitHub'da duruyor (içerikleri `main`'de); silinebilir.
