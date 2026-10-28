@@ -43,6 +43,9 @@ async def security_headers(request: Request, call_next):
     resp.headers["X-Content-Type-Options"] = "nosniff"
     resp.headers["Referrer-Policy"] = "no-referrer"
     resp.headers["Cache-Control"] = "no-store"
+    if resp.headers.get("content-type", "").startswith("application/json"):
+        # Kısayol başarıyı (mp4) hatadan (json) dosya uzantısıyla ayırıyor
+        resp.headers["Content-Disposition"] = 'inline; filename="hata.json"'
     return resp
 
 

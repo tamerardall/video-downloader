@@ -111,3 +111,9 @@ def test_bad_body_logged(caplog):
     r = c.post("/api/download", content="url=x")
     assert r.status_code == 422 and "url" in r.json()["detail"]
     assert "Geçersiz istek gövdesi" in caplog.text
+
+
+def test_json_errors_named_hata_json():
+    # Kısayol hata yanıtını dosya uzantısından (json) tanıyor
+    r = c.post("/api/download", json={"url": "http://127.0.0.1/"})
+    assert 'filename="hata.json"' in r.headers["content-disposition"]

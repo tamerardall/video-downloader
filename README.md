@@ -52,20 +52,19 @@ COOKIES_FILE=$HOME/.config/video-downloader/cookies.txt .venv/bin/uvicorn app.ma
    ```
    `API_TOKEN` aynı terminalde export edilmeli; yeni terminal açarsan tekrar ayarla (yeni anahtar üretirsen Kısayol'daki anahtarı da güncelle).
    Not: `--host 0.0.0.0` kullanma, sadece Tailscale arayüzüne bağla. Firewalld varsa 8000'i yalnızca `tailscale0` bölgesinde aç.
-3. iPhone'da **Kısayollar → Yeni Kısayol**, adı "Video İndir". Ayarlardan **Paylaşım Sayfasında Göster** aç, kabul edilen türlerden sadece **URL** ve **Metin** kalsın. Eylemler:
-   1. **Get URLs from Input** (Girdiden URL'leri al) ya da *Shortcut Input*
-   2. **Get Contents of URL** (URL'nin İçeriğini Al):
-      - URL: `http://100.x.y.z:8000/api/download`
-      - Yöntem: **POST**
-      - Başlıklar: `Authorization` = `Bearer <ANAHTAR>`
-      - İstek Gövdesi: **JSON** → `url` (Metin) = önceki adımın çıktısı (Shortcut Input)
-   3. **Get Dictionary Value** (Sözlük Değerini Al) → anahtar: `detail`, sözlük: *Contents of URL*
-   4. **If** (Eğer) *Dictionary Value* **has any value** (herhangi bir değeri varsa):
-      - **Show Alert** (Uyarı Göster) → *Dictionary Value* (sunucunun hata mesajı)
-      - **Otherwise** (Değilse): **Save to Photo Album** (Fotoğraf Albümüne Kaydet) → girdi: *Contents of URL*
-      - **End If**
+3. iPhone'da Kısayolu kur (eylemler sırayla, her biri üstteki arama kutusuna adı yazılarak eklenir):
+   1. **Kısayollar** → sağ üstte **+** → adı **Video İndir**.
+   2. Alttaki **ⓘ** (Ayrıntılar) → **Paylaşım Sayfasında Göster** açık. Üstte beliren "… girdi alır" kutusunda yalnızca **URL'ler** ve **Metin** seçili kalsın.
+   3. **URL'nin İçeriğini Al** eylemini ekle. Mavi **URL** alanına `http://100.x.y.z:8000/api/download` yaz. Eylemdeki **>** (Daha fazla göster) oku:
+      - **Yöntem:** POST
+      - **Başlıklar:** Başlık Ekle → anahtar `Authorization`, değer `Bearer <ANAHTAR>` (Bearer'dan sonra bir boşluk)
+      - **İstek Gövdesi:** JSON → Yeni Alan Ekle → **Metin** → anahtar `url`, değer: değer kutusuna dokun → klavyenin üstündeki **Değişken Seç** → **Kısayol Girdisi**
+   4. **Dosyaların Ayrıntılarını Al** eylemini ekle → mavi "Ayrıntı" yazısına dokun → **Dosya Uzantısı**. Girdisi otomatik **URL'nin İçeriği** olur.
+   5. **Eğer** eylemini ekle → koşul: *Dosya Uzantısı* **şudur** `json`.
+      - Eğer ile Değilse arasına: **Sözlük Değerini Al** → anahtar `detail`, sözlük **URL'nin İçeriği**; ardından **Uyarı Göster** → mesaj: **Sözlük Değeri**.
+      - **Değilse** ile **Eğer Sonu** arasına: **Fotoğraf Albümüne Kaydet** → girdi: **URL'nin İçeriği** (Değişken Seç ile).
 
-   "URL'nin İçeriğini Al" 4xx/5xx yanıtlarında hata vermez; hata JSON'u doğrudan albüme kaydetmeye gider ve sessizce hiçbir şey olmaz. 3–4. adımlar bu yüzden var. Sunucu her hatayı terminale de `WARNING` satırı olarak yazar.
+   Neden böyle: indirme başarılıysa sunucu `.mp4` gönderir, hata varsa `hata.json` gönderir. "URL'nin İçeriğini Al" hatada kendisi durmaz; uzantı kontrolü olmadan hata ya sessizce kaybolur ya da videodan sözlük okunmaya çalışılıp "sözlük değeri alınamıyor" hatası çıkar. Sunucu her hatayı terminale de `WARNING` satırı olarak yazar.
 4. TikTok/Instagram/Safari'de **Paylaş → Video İndir**. Paylaşım sayfası bağlantıyı açıklama metniyle birlikte gönderse de sunucu metnin içindeki ilk bağlantıyı kullanır.
 
 Uzun videolarda zaman aşımı olursa kısayol eylemi bekler, birkaç dakika sürebilir. Anahtarı kimseyle paylaşma; sızarsa `API_TOKEN`'ı değiştirip yeniden başlat.
