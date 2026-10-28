@@ -34,5 +34,4 @@ cd ~/Projeler/video-downloader && COOKIES_FROM_BROWSER="brave:$HOME/.var/app/com
 
 ## Açık konular
 
-- YouTube çalışmıyor ("No video formats found"): yt-dlp YouTube için bir JavaScript çalışma ortamı (ör. deno) istiyor, sistemde yok.
 - Eski `worktree-*` dalları GitHub'da duruyor (içerikleri `main`'de); silinebilir.
