@@ -2,20 +2,33 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
 <title>Video İndirici</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main>
+<main class="card">
   <h1>Video İndirici</h1>
   <p class="sub">Reklamsız, takipsiz. Linki yapıştır, indir.</p>
   <form id="f">
-    <input id="url" type="url" required placeholder="https://www.tiktok.com/@kullanici/video/..." autocomplete="off">
+    <div class="field">
+      <label for="url" class="sr">Video linki</label>
+      <input id="url" type="url" inputmode="url" required placeholder="https://www.tiktok.com/@kullanici/video/..." autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button id="paste" type="button" class="ghost" hidden>Yapıştır</button>
+    </div>
     <button id="go" type="submit">İndir</button>
   </form>
-  <input id="token" type="password" placeholder="Erişim anahtarı (gerekiyorsa)" autocomplete="off">
-  <p id="msg" role="status"></p>
+  <section id="preview" hidden aria-live="polite">
+    <strong id="p-title"></strong>
+    <span id="p-meta"></span>
+  </section>
+  <p id="msg" role="status" aria-live="polite"></p>
+  <details id="settings">
+    <summary>Ayarlar</summary>
+    <label for="token">Erişim anahtarı</label>
+    <input id="token" type="password" placeholder="Gerekiyorsa API_TOKEN" autocomplete="off">
+  </details>
 </main>
 <script src="app.js"></script>
 </body>
