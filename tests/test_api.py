@@ -58,3 +58,28 @@ def test_login_required_message(monkeypatch):
     for path in ("/api/info", "/api/download"):
         r = c.post(path, json=body)
         assert r.status_code == 422 and "çerez" in r.json()["detail"]
+
+
+def test_ytdlp_error_shown_and_logged(monkeypatch, caplog):
+    import app.main as m
+    import yt_dlp
+
+    class Fake:
+        def __init__(self, *a, **k): pass
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def extract_info(self, *a, **k):
+            raise yt_dlp.utils.DownloadError(
+                "\x1b[0;31mERROR:\x1b[0m [Instagram] abc: HTTP Error 400: Bad Request")
+
+    monkeypatch.setattr(m.yt_dlp, "YoutubeDL", Fake)
+    monkeypatch.setattr(m, "validate_url", lambda u: u)
+    body = {"url": "https://www.instagram.com/reel/abc/"}
+    for path in ("/api/info", "/api/download"):
+        caplog.clear()
+        r = c.post(path, json=body)
+        detail = r.json()["detail"]
+        assert r.status_code == 422
+        assert "[Instagram] abc: HTTP Error 400: Bad Request" in detail
+        assert "\x1b" not in detail and "ERROR:" not in detail
+        assert "HTTP Error 400" in caplog.text

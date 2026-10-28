@@ -1,7 +1,9 @@
 import asyncio
 import hmac
+import logging
 import mimetypes
 import os
+import re
 import shutil
 import tempfile
 from pathlib import Path
@@ -15,6 +17,8 @@ from pydantic import BaseModel
 from .security import InvalidURL, RateLimiter, validate_url
 from .thumbnail import fetch_thumbnail
 
+log = logging.getLogger("uvicorn.error")  # uvicorn terminaline yazar
+ANSI = re.compile(r"\x1b\[[0-9;]*m")
 STATIC = Path(__file__).parent / "static"
 MAX_FILESIZE = 500 * 1024 * 1024  # 500 MB
 limiter = RateLimiter(limit=10, window=60)
@@ -77,10 +81,12 @@ def _opts(**extra):
 
 
 def _error(e: Exception, default: str) -> str:
-    if any(h in str(e).lower() for h in LOGIN_HINTS):
-        return ("Bu site giriş yapmayı istiyor. Sunucuda COOKIES_FILE veya "
-                "COOKIES_FROM_BROWSER ile çerez tanımlayın (README'ye bakın).")
-    return default
+    msg = ANSI.sub("", str(e)).strip().removeprefix("ERROR:").strip()
+    log.warning("%s %s", default, msg)
+    if any(h in msg.lower() for h in LOGIN_HINTS):
+        default = ("Bu site giriş yapmayı istiyor. Sunucuda COOKIES_FILE veya "
+                   "COOKIES_FROM_BROWSER ile çerez tanımlayın (README'ye bakın).")
+    return f"{default} ({msg[:300]})" if msg else default
 
 
 @app.post("/api/info")
