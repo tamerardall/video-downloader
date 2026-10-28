@@ -91,7 +91,16 @@ Cookies give access to your account: never share a `cookies.txt` or commit it (`
 
 1. Install Tailscale on the computer and the phone, and sign in with the same account.
 2. Find the computer's Tailscale address: `tailscale ip -4` (e.g. `100.x.y.z`). On Windows/macOS it is also shown in the Tailscale menu.
-3. In `.env` set `HOST=100.x.y.z` and an `API_TOKEN` (see *Configuration*), then restart the app.
+3. Set an `API_TOKEN` in `.env` (see *Configuration*), then start the app on the Tailscale address. The command refuses to start without a token:
+   ```bash
+   # Linux / macOS
+   grep -q '^API_TOKEN=.' .env && HOST=$(tailscale ip -4) uv run -m app || echo "Set API_TOKEN in .env first"
+   ```
+   ```powershell
+   # Windows (PowerShell)
+   if (Select-String -Quiet '^API_TOKEN=.' .env) { $env:HOST = tailscale ip -4; uv run -m app } else { "Set API_TOKEN in .env first" }
+   ```
+   Or put `HOST=100.x.y.z` in `.env` and keep using `uv run -m app`.
 4. Allow the connection through the firewall if asked:
    - **Linux (firewalld):** open the port only on the Tailscale interface, e.g. `sudo firewall-cmd --zone=trusted --add-interface=tailscale0`.
    - **Windows:** when Windows Defender Firewall asks about Python, allow *Private networks*.

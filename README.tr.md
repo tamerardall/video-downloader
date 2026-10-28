@@ -91,7 +91,16 @@ Platform notları:
 
 1. Tailscale'i bilgisayara ve telefona kur, ikisinde de aynı hesapla giriş yap.
 2. Bilgisayarın Tailscale adresini bul: `tailscale ip -4` (ör. `100.x.y.z`). Windows/macOS'ta Tailscale menüsünde de görünür.
-3. `.env`'de `HOST=100.x.y.z` ve bir `API_TOKEN` ayarla (bkz. *Ayarlar*), uygulamayı yeniden başlat.
+3. `.env`'de bir `API_TOKEN` ayarla (bkz. *Ayarlar*), sonra uygulamayı Tailscale adresinde başlat. Komut anahtar yoksa başlatmaz:
+   ```bash
+   # Linux / macOS
+   grep -q '^API_TOKEN=.' .env && HOST=$(tailscale ip -4) uv run -m app || echo "Önce .env'e API_TOKEN yaz"
+   ```
+   ```powershell
+   # Windows (PowerShell)
+   if (Select-String -Quiet '^API_TOKEN=.' .env) { $env:HOST = tailscale ip -4; uv run -m app } else { "Önce .env'e API_TOKEN yaz" }
+   ```
+   Ya da `.env`'e `HOST=100.x.y.z` yazıp `uv run -m app` ile başlatmaya devam et.
 4. Sorulursa güvenlik duvarından izin ver:
    - **Linux (firewalld):** portu yalnızca Tailscale arayüzünde aç, ör. `sudo firewall-cmd --zone=trusted --add-interface=tailscale0`.
    - **Windows:** Windows Defender Güvenlik Duvarı Python için sorduğunda *Özel ağlar*'a izin ver.
