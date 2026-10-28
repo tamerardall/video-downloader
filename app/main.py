@@ -10,6 +10,7 @@ from pathlib import Path
 
 import yt_dlp
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -19,6 +20,7 @@ from .thumbnail import fetch_thumbnail
 
 log = logging.getLogger("uvicorn.error")  # uvicorn terminaline yazar
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
+URL_IN_TEXT = re.compile(r"https?://\S+")
 STATIC = Path(__file__).parent / "static"
 MAX_FILESIZE = 500 * 1024 * 1024  # 500 MB
 limiter = RateLimiter(limit=10, window=60)
@@ -48,17 +50,32 @@ class UrlBody(BaseModel):
     url: str
 
 
+@app.exception_handler(RequestValidationError)
+async def bad_body(request: Request, exc: RequestValidationError):
+    # Kısayol yanlış gövde gönderirse (JSON değil, "url" alanı yok...) terminalde görünsün
+    log.warning("Geçersiz istek gövdesi: %s", exc.errors())
+    return JSONResponse({"detail": "İstek gövdesi JSON ve içinde 'url' alanı olmalı."},
+                        status_code=422)
+
+
 def _check(request: Request, url: str) -> str:
+    ip = request.client.host if request.client else "unknown"
     if API_TOKEN:
         sent = request.headers.get("authorization", "").removeprefix("Bearer ")
         if not hmac.compare_digest(sent.encode(), API_TOKEN.encode()):
+            log.warning("Geçersiz veya eksik anahtar (%s)", ip)
             raise HTTPException(401, "Geçersiz veya eksik anahtar.")
-    ip = request.client.host if request.client else "unknown"
     if not limiter.allow(ip):
+        log.warning("İstek sınırı aşıldı (%s)", ip)
         raise HTTPException(429, "Çok fazla istek, biraz bekleyin.")
+    # Paylaşım sayfası bağlantıyı açıklama metniyle birlikte gönderebiliyor
+    found = URL_IN_TEXT.search(url)
+    if found:
+        url = found.group(0)
     try:
         return validate_url(url)
     except InvalidURL as e:
+        log.warning("URL reddedildi: %s (%r)", e, url[:200])
         raise HTTPException(400, str(e))
 
 

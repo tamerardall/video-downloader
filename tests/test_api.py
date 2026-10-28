@@ -83,3 +83,31 @@ def test_ytdlp_error_shown_and_logged(monkeypatch, caplog):
         assert "[Instagram] abc: HTTP Error 400: Bad Request" in detail
         assert "\x1b" not in detail and "ERROR:" not in detail
         assert "HTTP Error 400" in caplog.text
+
+
+def test_url_extracted_from_shared_text(monkeypatch):
+    import app.main as m
+    seen = []
+    monkeypatch.setattr(m, "validate_url", lambda u: seen.append(u) or u)
+
+    class Fake:
+        def __init__(self, *a, **k): pass
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def extract_info(self, *a, **k): raise RuntimeError("x")
+
+    monkeypatch.setattr(m.yt_dlp, "YoutubeDL", Fake)
+    text = "Bu reel'e bak\nhttps://www.instagram.com/reel/abc/?igsh=xyz "
+    c.post("/api/info", json={"url": text})
+    assert seen == ["https://www.instagram.com/reel/abc/?igsh=xyz"]
+
+
+def test_rejection_logged(caplog):
+    r = c.post("/api/download", json={"url": "http://127.0.0.1/"})
+    assert r.status_code == 400 and "127.0.0.1" in caplog.text
+
+
+def test_bad_body_logged(caplog):
+    r = c.post("/api/download", content="url=x")
+    assert r.status_code == 422 and "url" in r.json()["detail"]
+    assert "Geçersiz istek gövdesi" in caplog.text

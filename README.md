@@ -59,8 +59,14 @@ COOKIES_FILE=$HOME/.config/video-downloader/cookies.txt .venv/bin/uvicorn app.ma
       - Yöntem: **POST**
       - Başlıklar: `Authorization` = `Bearer <ANAHTAR>`
       - İstek Gövdesi: **JSON** → `url` (Metin) = önceki adımın çıktısı (Shortcut Input)
-   3. **Save to Photo Album** (Fotoğraf Albümüne Kaydet) → girdi: *Contents of URL*
-4. TikTok/Instagram/Safari'de **Paylaş → Video İndir**.
+   3. **Get Dictionary Value** (Sözlük Değerini Al) → anahtar: `detail`, sözlük: *Contents of URL*
+   4. **If** (Eğer) *Dictionary Value* **has any value** (herhangi bir değeri varsa):
+      - **Show Alert** (Uyarı Göster) → *Dictionary Value* (sunucunun hata mesajı)
+      - **Otherwise** (Değilse): **Save to Photo Album** (Fotoğraf Albümüne Kaydet) → girdi: *Contents of URL*
+      - **End If**
+
+   "URL'nin İçeriğini Al" 4xx/5xx yanıtlarında hata vermez; hata JSON'u doğrudan albüme kaydetmeye gider ve sessizce hiçbir şey olmaz. 3–4. adımlar bu yüzden var. Sunucu her hatayı terminale de `WARNING` satırı olarak yazar.
+4. TikTok/Instagram/Safari'de **Paylaş → Video İndir**. Paylaşım sayfası bağlantıyı açıklama metniyle birlikte gönderse de sunucu metnin içindeki ilk bağlantıyı kullanır.
 
 Uzun videolarda zaman aşımı olursa kısayol eylemi bekler, birkaç dakika sürebilir. Anahtarı kimseyle paylaşma; sızarsa `API_TOKEN`'ı değiştirip yeniden başlat.
 
