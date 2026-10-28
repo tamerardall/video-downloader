@@ -10,65 +10,42 @@ Kendi bilgisayarında çalışan, reklamsız ve takipsiz sosyal medya video indi
 
 ## Gereksinimler
 
-- Python 3.10 veya üstü
-- [ffmpeg](https://ffmpeg.org/) (görüntü ve sesi birleştirir)
+- [uv](https://docs.astral.sh/uv/) (doğru Python sürümünü ve tüm bağımlılıkları senin yerine kurar)
+- [git](https://git-scm.com/)
 
-YouTube'un istediği JavaScript çalışma ortamı ([Deno](https://deno.com/)) `requirements.txt` ile sanal ortamın içine kurulur; ayrıca kurmana gerek yok.
+Python, ffmpeg ya da Deno'yu ayrıca kurmana gerek yok; uv ilk çalıştırmada bunları indirir.
 
 ## Kurulum
 
-### Linux
+uv ve git'i bir kez kur:
 
 ```bash
-# Fedora (ffmpeg RPM Fusion'dan gelir)
-sudo dnf install -y python3 ffmpeg
-# Debian / Ubuntu
-sudo apt install -y python3 python3-venv ffmpeg
-
-git clone https://github.com/tamerardall/video-downloader
-cd video-downloader
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-cp .env.example .env
-.venv/bin/python -m app
+# Linux / macOS
+curl -LsSf https://astral.sh/uv/install.sh | sh   # git: genelde kurulu gelir (macOS: xcode-select --install)
 ```
-
-### macOS
-
-Yoksa önce [Homebrew](https://brew.sh/) kur.
-
-```bash
-brew install python ffmpeg
-git clone https://github.com/tamerardall/video-downloader
-cd video-downloader
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-cp .env.example .env
-.venv/bin/python -m app
-```
-
-### Windows (PowerShell)
 
 ```powershell
-winget install Python.Python.3.12 Gyan.FFmpeg Git.Git
-# python, ffmpeg ve git PATH'e girsin diye PowerShell'i kapatıp yeniden aç
-git clone https://github.com/tamerardall/video-downloader
-cd video-downloader
-py -m venv .venv
-.venv\Scripts\pip install -r requirements.txt
-Copy-Item .env.example .env
-.venv\Scripts\python -m app
+# Windows (PowerShell); ardından PowerShell'i kapatıp yeniden aç
+winget install astral-sh.uv Git.Git
 ```
 
-Tarayıcıda http://127.0.0.1:8000 adresini aç.
+Sonra her platformda:
 
-Uygulamayı her zaman yukarıdaki gibi `.venv` içindeki Python ile başlat. Sistemdeki `uvicorn` ya da `python` kurulu paketleri görmez ve `ModuleNotFoundError: No module named 'yt_dlp'` hatası verir.
+```bash
+git clone https://github.com/tamerardall/video-downloader
+cd video-downloader
+uv run -m app
+```
 
-**Güncelleme:** Siteler sık değiştiği için yt-dlp'yi düzenli güncelle: `.venv/bin/pip install -U -r requirements.txt` (Windows: `.venv\Scripts\pip install -U -r requirements.txt`), sonra uygulamayı yeniden başlat.
+İlk çalıştırma bağımlılıkları indirir ve `.env` dosyasını `.env.example`'dan oluşturur. Tarayıcıda http://127.0.0.1:8000 adresini aç. Sonraki seferlerde de `uv run -m app` ile başlat.
+
+**Güncelleme:** Siteler sık değiştiği için yt-dlp'yi düzenli güncelle: proje klasöründe `git pull` ve `uv sync --upgrade` çalıştır, sonra uygulamayı yeniden başlat.
+
+**Neden Docker yok?** Instagram gibi giriş isteyen siteler için çerezler tarayıcından okunur (`COOKIES_FROM_BROWSER`). Chrome, Brave ve Edge bunları sistem anahtarlığıyla şifreler; bir konteyner o anahtarlığa erişemez. Uygulamayı doğrudan uv ile çalıştırmak bunu çalışır durumda tutar.
 
 ## Ayarlar
 
-Tüm ayarlar proje klasöründeki `.env` dosyasında (`.env.example`'dan kopyalanır). Herhangi bir metin düzenleyiciyle düzenle (Windows: `notepad .env`) ve değişiklikten sonra uygulamayı yeniden başlat.
+Tüm ayarlar proje klasöründeki `.env` dosyasında (ilk çalıştırmada `.env.example`'dan oluşturulur). Herhangi bir metin düzenleyiciyle düzenle (Windows: `notepad .env`) ve değişiklikten sonra uygulamayı yeniden başlat.
 
 | Ayar | Varsayılan | Açıklama |
 |---|---|---|
@@ -171,7 +148,7 @@ Uygulamanın çalıştığı terminal her isteği yazar:
 | `WARNING Invalid request body` | Kısayolun istek gövdesi `url` alanı olan bir JSON değil. |
 
 - **`POST /api/download ... 200 OK` var ama Fotoğraflar'da video yok:** sorun telefonda; Kısayol adımlarını kontrol et. iPhone Fotoğraflar VP9/AV1 videoları kaydedemez; uygulama bunu önlemek için H.264 tercih eder.
-- **YouTube: "No video formats found":** Deno çalışma ortamı eksik. `pip install -r requirements.txt` ile yeniden kur ve uygulamayı `.venv` içindeki Python ile başlattığından emin ol.
+- **YouTube: "No video formats found":** Deno çalışma ortamı eksik. Uygulamayı projenin `.venv`'ini kullanması için `uv run -m app` ile başlat.
 - **Telefona aktarım yavaş ya da yarıda kalıyor:** `tailscale status` çalıştır; telefon `direct` görünmeli. `relay` bağlantılar çok daha yavaştır.
 
 ## Güvenlik
@@ -185,8 +162,7 @@ Uygulamanın çalıştığı terminal her isteği yazar:
 ## Geliştirme
 
 ```bash
-.venv/bin/pip install -r requirements.txt
-.venv/bin/python -m pytest
+uv run pytest
 ```
 
 Testler GitHub Actions'ta Linux ve Windows üzerinde çalışır. Ağ bağlantısı ya da ffmpeg gerektirmezler (yt-dlp taklit edilir).

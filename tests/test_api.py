@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 from app.main import app
 
@@ -184,6 +186,12 @@ def test_cookies_from_browser_windows_path(monkeypatch):
     import app.main as m
     monkeypatch.setattr(m, "COOKIES_FROM_BROWSER", "firefox:C:\\Users\\me\\profile")
     assert m._opts()["cookiesfrombrowser"] == ("firefox", "C:\\Users\\me\\profile")
+
+
+def test_ffmpeg_location():
+    # A system ffmpeg or the imageio-ffmpeg binary; either way yt-dlp gets a real file
+    import app.main as m
+    assert Path(m._opts()["ffmpeg_location"]).is_file()
 
 
 def test_dotenv_loaded(tmp_path):

@@ -9,6 +9,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+import imageio_ffmpeg
 import yt_dlp
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -34,6 +35,9 @@ LOGIN_HINTS = ("--cookies", "login required", "log in", "empty media response")
 # JS runtime yt-dlp needs for YouTube (pip "deno" package). The server may run without the
 # venv activated, so .venv/bin (Scripts on Windows) isn't on PATH; look it up explicitly.
 DENO = shutil.which("deno", path=str(Path(sys.executable).parent))
+# Merges video and audio. Prefer a system ffmpeg (newer, comes with ffprobe), otherwise
+# use the static binary from the imageio-ffmpeg package.
+FFMPEG = shutil.which("ffmpeg") or imageio_ffmpeg.get_ffmpeg_exe()
 FORMAT = "bv*+ba/b"
 # iPhone Photos won't save VP9/AV1, so prefer H.264 + AAC. "res" must come before the
 # audio key, otherwise YouTube's old muxed 360p file (it has audio) beats 1080p video+audio.
@@ -97,6 +101,7 @@ def _opts(**extra):
         "noplaylist": True,
         "max_filesize": MAX_FILESIZE,
         "socket_timeout": 20,
+        "ffmpeg_location": FFMPEG,
         **extra,
     }
     if COOKIES_FILE:

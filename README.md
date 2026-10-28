@@ -10,65 +10,42 @@ A self-hosted, ad-free, tracker-free video downloader for social media (TikTok, 
 
 ## Requirements
 
-- Python 3.10 or newer
-- [ffmpeg](https://ffmpeg.org/) (merges video and audio)
+- [uv](https://docs.astral.sh/uv/) (installs the right Python and all dependencies for you)
+- [git](https://git-scm.com/)
 
-The JavaScript runtime YouTube needs ([Deno](https://deno.com/)) is installed into the virtual environment from `requirements.txt`; you don't need to install it separately.
+You don't need to install Python, ffmpeg or Deno yourself; uv downloads them on the first run.
 
 ## Installation
 
-### Linux
+Install uv and git once:
 
 ```bash
-# Fedora (ffmpeg comes from RPM Fusion)
-sudo dnf install -y python3 ffmpeg
-# Debian / Ubuntu
-sudo apt install -y python3 python3-venv ffmpeg
-
-git clone https://github.com/tamerardall/video-downloader
-cd video-downloader
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-cp .env.example .env
-.venv/bin/python -m app
+# Linux / macOS
+curl -LsSf https://astral.sh/uv/install.sh | sh   # git: usually preinstalled (macOS: xcode-select --install)
 ```
-
-### macOS
-
-Install [Homebrew](https://brew.sh/) first if you don't have it.
-
-```bash
-brew install python ffmpeg
-git clone https://github.com/tamerardall/video-downloader
-cd video-downloader
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-cp .env.example .env
-.venv/bin/python -m app
-```
-
-### Windows (PowerShell)
 
 ```powershell
-winget install Python.Python.3.12 Gyan.FFmpeg Git.Git
-# Close and reopen PowerShell so python, ffmpeg and git are on PATH
-git clone https://github.com/tamerardall/video-downloader
-cd video-downloader
-py -m venv .venv
-.venv\Scripts\pip install -r requirements.txt
-Copy-Item .env.example .env
-.venv\Scripts\python -m app
+# Windows (PowerShell); close and reopen PowerShell afterwards
+winget install astral-sh.uv Git.Git
 ```
 
-Open http://127.0.0.1:8000 in your browser.
+Then, on every platform:
 
-Always start the app with the Python inside `.venv` (as above). A system-wide `uvicorn` or `python` won't see the installed packages and fails with `ModuleNotFoundError: No module named 'yt_dlp'`.
+```bash
+git clone https://github.com/tamerardall/video-downloader
+cd video-downloader
+uv run -m app
+```
 
-**Updating:** sites change often, so update yt-dlp regularly: `.venv/bin/pip install -U -r requirements.txt` (Windows: `.venv\Scripts\pip install -U -r requirements.txt`), then restart the app.
+The first run downloads the dependencies and creates `.env` from `.env.example`. Open http://127.0.0.1:8000 in your browser. Use `uv run -m app` to start it again later.
+
+**Updating:** sites change often, so update yt-dlp regularly: run `git pull` and `uv sync --upgrade` in the project folder, then restart the app.
+
+**Why no Docker?** Instagram and other login-only sites need cookies read from your browser (`COOKIES_FROM_BROWSER`). Chrome, Brave and Edge encrypt them with the system keyring, which a container can't reach. Running the app directly with uv keeps that working.
 
 ## Configuration
 
-All settings live in the `.env` file in the project folder (copied from `.env.example`). Edit it with any text editor (Windows: `notepad .env`) and restart the app after changes.
+All settings live in the `.env` file in the project folder (created from `.env.example` on the first run). Edit it with any text editor (Windows: `notepad .env`) and restart the app after changes.
 
 | Setting | Default | Description |
 |---|---|---|
@@ -171,7 +148,7 @@ The terminal running the app logs every request:
 | `WARNING Invalid request body` | The Shortcut's request body isn't JSON with a `url` field. |
 
 - **`POST /api/download ... 200 OK` but nothing in Photos:** the problem is on the phone: check the Shortcut steps. iPhone Photos can't save VP9/AV1 videos; the app prefers H.264 to avoid this.
-- **YouTube: "No video formats found":** the Deno runtime is missing. Reinstall with `pip install -r requirements.txt` and make sure you start the app with the Python from `.venv`.
+- **YouTube: "No video formats found":** the Deno runtime is missing. Start the app with `uv run -m app` so it uses the project's `.venv`.
 - **Slow or interrupted transfers to the phone:** run `tailscale status`; the phone should show `direct`. `relay` connections are much slower.
 
 ## Security
@@ -185,8 +162,7 @@ The terminal running the app logs every request:
 ## Development
 
 ```bash
-.venv/bin/pip install -r requirements.txt
-.venv/bin/python -m pytest
+uv run pytest
 ```
 
 Tests run on Linux and Windows in GitHub Actions. They don't need network access or ffmpeg (yt-dlp is mocked).
