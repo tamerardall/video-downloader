@@ -1,4 +1,7 @@
 import asyncio
+import hmac
+import mimetypes
+import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -14,6 +17,7 @@ from .security import InvalidURL, RateLimiter, validate_url
 STATIC = Path(__file__).parent / "static"
 MAX_FILESIZE = 500 * 1024 * 1024  # 500 MB
 limiter = RateLimiter(limit=10, window=60)
+API_TOKEN = os.environ.get("API_TOKEN", "")
 
 app = FastAPI(title="Video Downloader", docs_url=None, redoc_url=None, openapi_url=None)
 
@@ -35,6 +39,10 @@ class UrlBody(BaseModel):
 
 
 def _check(request: Request, url: str) -> str:
+    if API_TOKEN:
+        sent = request.headers.get("authorization", "").removeprefix("Bearer ")
+        if not hmac.compare_digest(sent.encode(), API_TOKEN.encode()):
+            raise HTTPException(401, "Geçersiz veya eksik anahtar.")
     ip = request.client.host if request.client else "unknown"
     if not limiter.allow(ip):
         raise HTTPException(429, "Çok fazla istek, biraz bekleyin.")
@@ -100,7 +108,8 @@ async def download(body: UrlBody, request: Request, bg: BackgroundTasks):
 
     bg.add_task(shutil.rmtree, tmp, True)
     f = files[0]
-    return FileResponse(f, filename=f.name, media_type="application/octet-stream")
+    media = mimetypes.guess_type(f.name)[0] or "application/octet-stream"
+    return FileResponse(f, filename=f.name, media_type=media)
 
 
 app.mount("/", StaticFiles(directory=STATIC, html=True), name="static")

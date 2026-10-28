@@ -19,7 +19,29 @@ Tarayıcıda http://127.0.0.1:8000 aç. Güncelleme: `pip install -U yt-dlp` (si
 - Sadece http/https; kullanıcı bilgili, yerel/özel IP'li (SSRF) ve izin listesi dışı alan adları reddedilir (`ALLOWED_DOMAINS` env ile değiştirilebilir, virgülle ayrılmış).
 - IP başına dakikada 10 istek, en çok 500 MB dosya, indirmeler geçici klasörde tutulup sonra silinir.
 - Harici script/font/tracker yok; CSP ile sadece kendi kaynakları. Varsayılan olarak yalnızca 127.0.0.1'e bağlanır.
-- İnternete açma; açacaksan arkasına kimlik doğrulama koy.
+- `API_TOKEN` tanımlıysa tüm `/api/*` istekleri `Authorization: Bearer <anahtar>` ister (sabit zamanlı karşılaştırma). 127.0.0.1 dışına bağlanacaksan mutlaka ayarla.
+- Portu internete açma; uzaktan erişim için Tailscale kullan.
+
+## iPhone Kısayolu (Tailscale ile)
+
+1. Fedora ve iPhone'a [Tailscale](https://tailscale.com/download) kur, aynı hesapla giriş yap. Fedora'nın Tailscale adresini al: `tailscale ip -4` (örn. `100.x.y.z`).
+2. Fedora'da gizli anahtar üret ve uygulamayı Tailscale adresine bağlayarak başlat:
+   ```bash
+   export API_TOKEN=$(openssl rand -hex 24); echo $API_TOKEN   # bir yere not al
+   uvicorn app.main:app --host $(tailscale ip -4) --port 8000
+   ```
+   Not: `--host 0.0.0.0` kullanma, sadece Tailscale arayüzüne bağla. Firewalld varsa 8000'i yalnızca `tailscale0` bölgesinde aç.
+3. iPhone'da **Kısayollar → Yeni Kısayol**, adı "Video İndir". Ayarlardan **Paylaşım Sayfasında Göster** aç, kabul edilen türlerden sadece **URL** ve **Metin** kalsın. Eylemler:
+   1. **Get URLs from Input** (Girdiden URL'leri al) ya da *Shortcut Input*
+   2. **Get Contents of URL** (URL'nin İçeriğini Al):
+      - URL: `http://100.x.y.z:8000/api/download`
+      - Yöntem: **POST**
+      - Başlıklar: `Authorization` = `Bearer <ANAHTAR>`
+      - İstek Gövdesi: **JSON** → `url` (Metin) = önceki adımın çıktısı (Shortcut Input)
+   3. **Save to Photo Album** (Fotoğraf Albümüne Kaydet) → girdi: *Contents of URL*
+4. TikTok/Instagram/Safari'de **Paylaş → Video İndir**.
+
+Uzun videolarda zaman aşımı olursa kısayol eylemi bekler, birkaç dakika sürebilir. Anahtarı kimseyle paylaşma; sızarsa `API_TOKEN`'ı değiştirip yeniden başlat.
 
 ## Test
 
