@@ -189,7 +189,7 @@ The terminal running the app logs every request:
 .venv/bin/python -m pytest
 ```
 
-Tests run on Linux, macOS and Windows in GitHub Actions. They don't need network access or ffmpeg (yt-dlp is mocked).
+Tests run on Linux and Windows in GitHub Actions. They don't need network access or ffmpeg (yt-dlp is mocked).
 
 ## Legal
 

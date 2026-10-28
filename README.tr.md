@@ -189,7 +189,7 @@ Uygulamanın çalıştığı terminal her isteği yazar:
 .venv/bin/python -m pytest
 ```
 
-Testler GitHub Actions'ta Linux, macOS ve Windows üzerinde çalışır. Ağ bağlantısı ya da ffmpeg gerektirmezler (yt-dlp taklit edilir).
+Testler GitHub Actions'ta Linux ve Windows üzerinde çalışır. Ağ bağlantısı ya da ffmpeg gerektirmezler (yt-dlp taklit edilir).
 
 ## Yasal not
 
