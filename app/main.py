@@ -19,24 +19,24 @@ from pydantic import BaseModel
 from .security import InvalidURL, RateLimiter, validate_url
 from .thumbnail import fetch_thumbnail
 
-log = logging.getLogger("uvicorn.error")  # uvicorn terminaline yazar
+log = logging.getLogger("uvicorn.error")  # shows up in the uvicorn terminal
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
 URL_IN_TEXT = re.compile(r"https?://\S+")
 STATIC = Path(__file__).parent / "static"
 MAX_FILESIZE = 500 * 1024 * 1024  # 500 MB
 limiter = RateLimiter(limit=10, window=60)
 API_TOKEN = os.environ.get("API_TOKEN", "")
-# Instagram vb. giriş isteyen siteler için: Netscape formatında cookies.txt yolu
-# ya da çerezlerin okunacağı tarayıcı adı (firefox, chrome, ...).
+# For sites that require login (Instagram, ...): a Netscape cookies.txt path, or the
+# browser to read cookies from ("firefox", or "browser:/profile/path" for custom profiles).
 COOKIES_FILE = os.environ.get("COOKIES_FILE", "")
 COOKIES_FROM_BROWSER = os.environ.get("COOKIES_FROM_BROWSER", "")
 LOGIN_HINTS = ("--cookies", "login required", "log in", "empty media response")
-# YouTube için JS çalışma ortamı (pip "deno" paketi). Sunucu venv etkinleştirilmeden
-# başlatıldığında .venv/bin PATH'te olmaz, bu yüzden yol açıkça verilir.
-DENO = str(Path(sys.executable).parent / "deno")
+# JS runtime yt-dlp needs for YouTube (pip "deno" package). The server may run without the
+# venv activated, so .venv/bin (Scripts on Windows) isn't on PATH; look it up explicitly.
+DENO = shutil.which("deno", path=str(Path(sys.executable).parent))
 FORMAT = "bv*+ba/b"
-# iPhone Fotoğraflar VP9/AV1 kaydetmiyor: H.264 + AAC tercih edilir. "res" sesten önce
-# gelmeli; yoksa YouTube'un sesli eski 360p dosyası 1080p görüntü+sesin önüne geçer.
+# iPhone Photos won't save VP9/AV1, so prefer H.264 + AAC. "res" must come before the
+# audio key, otherwise YouTube's old muxed 360p file (it has audio) beats 1080p video+audio.
 FORMAT_SORT = ["vcodec:h264", "res", "acodec:aac", "ext:mp4:m4a"]
 
 app = FastAPI(title="Video Downloader", docs_url=None, redoc_url=None, openapi_url=None)
@@ -52,8 +52,8 @@ async def security_headers(request: Request, call_next):
     resp.headers["Referrer-Policy"] = "no-referrer"
     resp.headers["Cache-Control"] = "no-store"
     if resp.headers.get("content-type", "").startswith("application/json"):
-        # Kısayol başarıyı (mp4) hatadan (json) dosya uzantısıyla ayırıyor
-        resp.headers["Content-Disposition"] = 'inline; filename="hata.json"'
+        # The iOS Shortcut tells success (mp4) from errors (json) by file extension
+        resp.headers["Content-Disposition"] = 'inline; filename="error.json"'
     return resp
 
 
@@ -63,9 +63,9 @@ class UrlBody(BaseModel):
 
 @app.exception_handler(RequestValidationError)
 async def bad_body(request: Request, exc: RequestValidationError):
-    # Kısayol yanlış gövde gönderirse (JSON değil, "url" alanı yok...) terminalde görünsün
-    log.warning("Geçersiz istek gövdesi: %s", exc.errors())
-    return JSONResponse({"detail": "İstek gövdesi JSON ve içinde 'url' alanı olmalı."},
+    # Log malformed bodies (not JSON, no "url" field...) so Shortcut setup mistakes are visible
+    log.warning("Invalid request body: %s", exc.errors())
+    return JSONResponse({"detail": "Request body must be JSON with a 'url' field."},
                         status_code=422)
 
 
@@ -74,19 +74,19 @@ def _check(request: Request, url: str) -> str:
     if API_TOKEN:
         sent = request.headers.get("authorization", "").removeprefix("Bearer ")
         if not hmac.compare_digest(sent.encode(), API_TOKEN.encode()):
-            log.warning("Geçersiz veya eksik anahtar (%s)", ip)
-            raise HTTPException(401, "Geçersiz veya eksik anahtar.")
+            log.warning("Invalid or missing API token (%s)", ip)
+            raise HTTPException(401, "Invalid or missing API token.")
     if not limiter.allow(ip):
-        log.warning("İstek sınırı aşıldı (%s)", ip)
-        raise HTTPException(429, "Çok fazla istek, biraz bekleyin.")
-    # Paylaşım sayfası bağlantıyı açıklama metniyle birlikte gönderebiliyor
+        log.warning("Rate limit exceeded (%s)", ip)
+        raise HTTPException(429, "Too many requests, please wait a minute.")
+    # Share sheets may send the link together with caption text
     found = URL_IN_TEXT.search(url)
     if found:
         url = found.group(0)
     try:
         return validate_url(url)
     except InvalidURL as e:
-        log.warning("URL reddedildi: %s (%r)", e, url[:200])
+        log.warning("URL rejected: %s (%r)", e, url[:200])
         raise HTTPException(400, str(e))
 
 
@@ -102,10 +102,11 @@ def _opts(**extra):
     if COOKIES_FILE:
         opts["cookiefile"] = COOKIES_FILE
     if COOKIES_FROM_BROWSER:
-        # "brave" ya da "brave:/profil/yolu" (Flatpak tarayıcılar için)
+        # "firefox" or "firefox:/profile/path"; splits on the first colon only, so
+        # Windows paths like "firefox:C:\Users\me\profile" stay intact
         browser, _, profile = COOKIES_FROM_BROWSER.partition(":")
         opts["cookiesfrombrowser"] = (browser, profile or None)
-    if os.path.exists(DENO):
+    if DENO:
         opts["js_runtimes"] = {"deno": {"path": DENO}}
     return opts
 
@@ -114,8 +115,8 @@ def _error(e: Exception, default: str) -> str:
     msg = ANSI.sub("", str(e)).strip().removeprefix("ERROR:").strip()
     log.warning("%s %s", default, msg)
     if any(h in msg.lower() for h in LOGIN_HINTS):
-        default = ("Bu site giriş yapmayı istiyor. Sunucuda COOKIES_FILE veya "
-                   "COOKIES_FROM_BROWSER ile çerez tanımlayın (README'ye bakın).")
+        default = ("This site requires login. Set COOKIES_FROM_BROWSER or COOKIES_FILE "
+                   "on the server (see README).")
     return f"{default} ({msg[:300]})" if msg else default
 
 
@@ -130,7 +131,7 @@ async def info(body: UrlBody, request: Request):
     try:
         data = await asyncio.to_thread(run)
     except Exception as e:
-        raise HTTPException(422, _error(e, "Video bilgisi alınamadı."))
+        raise HTTPException(422, _error(e, "Could not get video info."))
     return {
         "title": data.get("title"),
         "uploader": data.get("uploader"),
@@ -162,11 +163,11 @@ async def download(body: UrlBody, request: Request, bg: BackgroundTasks):
             raise RuntimeError("no file")
     except Exception as e:
         shutil.rmtree(tmp, ignore_errors=True)
-        return JSONResponse({"detail": _error(e, "İndirme başarısız.")}, status_code=422)
+        return JSONResponse({"detail": _error(e, "Download failed.")}, status_code=422)
 
     bg.add_task(shutil.rmtree, tmp, True)
     f = files[0]
-    log.info("İndirildi: %s (%.1f MB, görüntü %s, ses %s)", f.name,
+    log.info("Downloaded: %s (%.1f MB, video %s, audio %s)", f.name,
              f.stat().st_size / 1e6, data.get("vcodec"), data.get("acodec"))
     media = mimetypes.guess_type(f.name)[0] or "application/octet-stream"
     return FileResponse(f, filename=f.name, media_type=media)

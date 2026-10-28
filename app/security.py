@@ -1,4 +1,4 @@
-"""URL doğrulama ve basit istek sınırlama (SSRF / kötüye kullanım koruması)."""
+"""URL validation and simple rate limiting (SSRF / abuse protection)."""
 import ipaddress
 import os
 import socket
@@ -33,24 +33,24 @@ def _is_public_ip(ip: str) -> bool:
 
 def validate_url(url: str, resolve: bool = True) -> str:
     if not url or len(url) > MAX_URL_LEN:
-        raise InvalidURL("Geçersiz URL.")
+        raise InvalidURL("Invalid URL.")
     parsed = urlparse(url.strip())
     if parsed.scheme not in ("http", "https"):
-        raise InvalidURL("Sadece http/https desteklenir.")
+        raise InvalidURL("Only http/https URLs are supported.")
     if parsed.username or parsed.password:
-        raise InvalidURL("URL içinde kullanıcı bilgisi olamaz.")
+        raise InvalidURL("URLs with credentials are not allowed.")
     host = (parsed.hostname or "").lower().rstrip(".")
     if not host:
-        raise InvalidURL("Geçersiz URL.")
+        raise InvalidURL("Invalid URL.")
     if not _domain_allowed(host):
-        raise InvalidURL("Bu site desteklenmiyor.")
+        raise InvalidURL("This site is not supported (see ALLOWED_DOMAINS).")
     if resolve:
         try:
             infos = socket.getaddrinfo(host, None)
         except socket.gaierror:
-            raise InvalidURL("Adres çözümlenemedi.")
+            raise InvalidURL("Could not resolve the host.")
         if not all(_is_public_ip(i[4][0]) for i in infos):
-            raise InvalidURL("Yerel/özel adreslere izin verilmez.")
+            raise InvalidURL("Local/private addresses are not allowed.")
     return url.strip()
 
 

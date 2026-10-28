@@ -57,7 +57,7 @@ def test_login_required_message(monkeypatch):
     body = {"url": "https://www.instagram.com/reel/x/"}
     for path in ("/api/info", "/api/download"):
         r = c.post(path, json=body)
-        assert r.status_code == 422 and "çerez" in r.json()["detail"]
+        assert r.status_code == 422 and "COOKIES_FROM_BROWSER" in r.json()["detail"]
 
 
 def test_ytdlp_error_shown_and_logged(monkeypatch, caplog):
@@ -110,17 +110,17 @@ def test_rejection_logged(caplog):
 def test_bad_body_logged(caplog):
     r = c.post("/api/download", content="url=x")
     assert r.status_code == 422 and "url" in r.json()["detail"]
-    assert "Geçersiz istek gövdesi" in caplog.text
+    assert "Invalid request body" in caplog.text
 
 
-def test_json_errors_named_hata_json():
-    # Kısayol hata yanıtını dosya uzantısından (json) tanıyor
+def test_json_errors_named_error_json():
+    # The iOS Shortcut recognises error responses by their file extension (json)
     r = c.post("/api/download", json={"url": "http://127.0.0.1/"})
-    assert 'filename="hata.json"' in r.headers["content-disposition"]
+    assert 'filename="error.json"' in r.headers["content-disposition"]
 
 
 def test_download_prefers_iphone_codecs_and_logs(monkeypatch, caplog):
-    # iPhone Fotoğraflar VP9/AV1 kaydetmiyor; H.264 + AAC öncelikli olmalı
+    # iPhone Photos won't save VP9/AV1; H.264 + AAC must be preferred
     import app.main as m
     from pathlib import Path
     seen = {}
@@ -144,8 +144,8 @@ def test_download_prefers_iphone_codecs_and_logs(monkeypatch, caplog):
 
 
 def test_format_sort_picks_hd_h264_over_muxed_360p():
-    # YouTube: eski birleşik 360p (ses dahil) 1080p H.264 görüntü+sesin önüne geçmemeli;
-    # VP9/AV1 daha yüksek bit hızlı olsa da seçilmemeli (iPhone kaydetmiyor)
+    # YouTube: the old muxed 360p file (with audio) must not beat 1080p H.264 video+audio,
+    # and VP9/AV1 must not win despite a higher bitrate (iPhone can't save them)
     import yt_dlp
     import app.main as m
 
@@ -170,12 +170,32 @@ def test_format_sort_picks_hd_h264_over_muxed_360p():
     assert r["format_id"] == "137+140"
 
 
-def test_deno_from_venv(monkeypatch, tmp_path):
-    # YouTube için JS çalışma ortamı; sunucu venv etkinleştirilmeden başlatılıyor
+def test_deno_from_venv(monkeypatch):
+    # JS runtime for YouTube; the server may run without the venv activated
     import app.main as m
-    deno = tmp_path / "deno"
-    deno.write_text("")
-    monkeypatch.setattr(m, "DENO", str(deno))
-    assert m._opts()["js_runtimes"] == {"deno": {"path": str(deno)}}
-    monkeypatch.setattr(m, "DENO", str(tmp_path / "yok"))
+    monkeypatch.setattr(m, "DENO", "/venv/bin/deno")
+    assert m._opts()["js_runtimes"] == {"deno": {"path": "/venv/bin/deno"}}
+    monkeypatch.setattr(m, "DENO", None)
     assert "js_runtimes" not in m._opts()
+
+
+def test_cookies_from_browser_windows_path(monkeypatch):
+    # Only the first colon separates browser and profile; drive letters stay intact
+    import app.main as m
+    monkeypatch.setattr(m, "COOKIES_FROM_BROWSER", "firefox:C:\\Users\\me\\profile")
+    assert m._opts()["cookiesfrombrowser"] == ("firefox", "C:\\Users\\me\\profile")
+
+
+def test_dotenv_loaded(tmp_path):
+    # app/__init__.py loads the project's .env unless VD_NO_DOTENV is set
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+    root = Path(__file__).resolve().parent.parent
+    env = {k: v for k, v in os.environ.items() if k not in ("VD_NO_DOTENV", "PORT")}
+    code = ("import dotenv, os; dotenv.load_dotenv = lambda p, override: "
+            "os.environ.setdefault('PORT', str(p)); import app; print(os.environ['PORT'])")
+    out = subprocess.run([sys.executable, "-c", code], cwd=root, env=env,
+                         capture_output=True, text=True, check=True).stdout.strip()
+    assert out == str(root / ".env")

@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#FFF1F2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#140B10" media="(prefers-color-scheme: dark)">
-<title>Video İndirici</title>
+<title data-i18n="title">Video Downloader</title>
 <link rel="preload" href="fonts/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
 </head>
@@ -22,52 +22,52 @@
 </svg>
 
 <header class="bar">
-  <span class="brand"><span class="mark"><svg class="i"><use href="#i-down"/></svg></span>Video İndirici</span>
+  <span class="brand"><span class="mark"><svg class="i"><use href="#i-down"/></svg></span><span data-i18n="title">Video Downloader</span></span>
   <details id="settings">
-    <summary><svg class="i"><use href="#i-key"/></svg><span>Anahtar</span></summary>
+    <summary><svg class="i"><use href="#i-key"/></svg><span data-i18n="key">Key</span></summary>
     <div class="pop">
-      <label for="token">Erişim anahtarı</label>
-      <input id="token" type="password" placeholder="Gerekiyorsa API_TOKEN" autocomplete="off" aria-describedby="token-help">
-      <p id="token-help" class="help">Sunucu <code>API_TOKEN</code> ile başlatıldıysa gerekir. Bu tarayıcıda saklanır.</p>
+      <label for="token" data-i18n="keyLabel">Access key</label>
+      <input id="token" type="password" placeholder="API_TOKEN, if required" data-i18n-ph="keyPh" autocomplete="off" aria-describedby="token-help">
+      <p id="token-help" class="help" data-i18n-html="keyHelp">Needed if the server was started with <code>API_TOKEN</code>. Stored in this browser.</p>
     </div>
   </details>
 </header>
 
 <main>
   <section class="hero">
-    <h1>Linki yapıştır,<br>videoyu al.</h1>
-    <p class="sub">Reklam yok, takip yok. Kendi makinende çalışır.</p>
+    <h1 data-i18n-html="h1">Paste a link,<br>get the video.</h1>
+    <p class="sub" data-i18n="sub">No ads, no tracking. Runs on your own machine.</p>
 
     <form id="f">
-      <label for="url" class="lbl">Video linki</label>
+      <label for="url" class="lbl" data-i18n="urlLabel">Video link</label>
       <div class="field">
         <svg class="i lead"><use href="#i-link"/></svg>
         <input id="url" type="url" inputmode="url" required placeholder="https://…" autocomplete="off" autocapitalize="off" spellcheck="false">
-        <button id="paste" type="button" class="paste" hidden><svg class="i"><use href="#i-clip"/></svg><span>Yapıştır</span></button>
+        <button id="paste" type="button" class="paste" hidden><svg class="i"><use href="#i-clip"/></svg><span data-i18n="paste">Paste</span></button>
       </div>
-      <button id="go" type="submit" class="go"><svg class="i"><use href="#i-down"/></svg><span id="go-label">İndir</span></button>
+      <button id="go" type="submit" class="go"><svg class="i"><use href="#i-down"/></svg><span id="go-label" data-i18n="download">Download</span></button>
     </form>
 
-    <ul class="sites" aria-label="Desteklenen siteler">
+    <ul class="sites" aria-label="Supported sites" data-i18n-aria="sites">
       <li data-site="tiktok">TikTok</li>
       <li data-site="instagram">Instagram</li>
       <li data-site="youtube">YouTube</li>
       <li data-site="x">X</li>
-      <li class="more">ve daha fazlası</li>
+      <li class="more" data-i18n="more">and more</li>
     </ul>
   </section>
 
-  <section class="card" id="frame" aria-label="Önizleme">
-    <ol class="steps" aria-label="Adımlar">
-      <li id="s1"><span class="dot"><b>1</b><svg class="i"><use href="#i-check"/></svg></span>Link</li>
-      <li id="s2"><span class="dot"><b>2</b><svg class="i"><use href="#i-check"/></svg></span>Önizleme</li>
-      <li id="s3"><span class="dot"><b>3</b><svg class="i"><use href="#i-check"/></svg></span>İndirme</li>
+  <section class="card" id="frame" aria-label="Preview" data-i18n-aria="preview">
+    <ol class="steps" aria-label="Steps" data-i18n-aria="steps">
+      <li id="s1"><span class="dot"><b>1</b><svg class="i"><use href="#i-check"/></svg></span><span data-i18n="step1">Link</span></li>
+      <li id="s2"><span class="dot"><b>2</b><svg class="i"><use href="#i-check"/></svg></span><span data-i18n="preview">Preview</span></li>
+      <li id="s3"><span class="dot"><b>3</b><svg class="i"><use href="#i-check"/></svg></span><span data-i18n="step3">Download</span></li>
     </ol>
     <div class="gate" id="gate">
       <img id="p-img" alt="" hidden>
       <div id="p-empty" class="empty">
         <svg class="i"><use href="#i-play"/></svg>
-        <p id="p-empty-text">Önizleme burada görünecek.</p>
+        <p id="p-empty-text" data-i18n="empty">The preview will appear here.</p>
       </div>
     </div>
     <div class="cap" id="p-cap" hidden>
@@ -76,11 +76,11 @@
     </div>
     <div class="progress" id="bar" hidden><span></span></div>
     <p id="msg" role="status" aria-live="polite"></p>
-    <button id="again" type="button" class="again" hidden><svg class="i"><use href="#i-again"/></svg>Başka bir video</button>
+    <button id="again" type="button" class="again" hidden><svg class="i"><use href="#i-again"/></svg><span data-i18n="again">Another video</span></button>
   </section>
 </main>
 
-<footer class="foot">Kişisel kullanım içindir. Platform kurallarına ve telif haklarına uy.</footer>
+<footer class="foot" data-i18n="foot">For personal use. Respect each platform's terms and copyright.</footer>
 <script src="app.js"></script>
 </body>
 </html>

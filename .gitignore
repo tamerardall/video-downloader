@@ -3,3 +3,10 @@ __pycache__/
 .pytest_cache/
 downloads/
 *.pyc
+
+# Local settings and secrets
+.env
+cookies*.txt
+
+# Personal notes
+memory.md

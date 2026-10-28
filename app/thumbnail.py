@@ -1,4 +1,4 @@
-"""Önizleme küçük resmini sunucuda indirip data: URI yapar (tarayıcı CDN'e bağlanmaz)."""
+"""Fetch the preview thumbnail on the server as a data: URI (the browser never hits the CDN)."""
 import base64
 import socket
 import urllib.request
@@ -12,7 +12,7 @@ TYPES = {"image/jpeg", "image/png", "image/webp"}
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, *args, **kwargs):
-        return None  # yönlendirme özel adrese gidebilir; takip etme
+        return None  # a redirect could point at a private address; don't follow
 
 
 _opener = urllib.request.build_opener(_NoRedirect)
