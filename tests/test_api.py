@@ -117,3 +117,27 @@ def test_json_errors_named_hata_json():
     # Kısayol hata yanıtını dosya uzantısından (json) tanıyor
     r = c.post("/api/download", json={"url": "http://127.0.0.1/"})
     assert 'filename="hata.json"' in r.headers["content-disposition"]
+
+
+def test_download_prefers_iphone_codecs_and_logs(monkeypatch, caplog):
+    # iPhone Fotoğraflar VP9/AV1 kaydetmiyor; H.264 + AAC öncelikli olmalı
+    import app.main as m
+    from pathlib import Path
+    seen = {}
+
+    class Fake:
+        def __init__(self, opts): seen.update(opts)
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def extract_info(self, *a, **k):
+            out = Path(seen["outtmpl"]).parent / "abc.mp4"
+            out.write_bytes(b"x" * 10)
+            return {"vcodec": "avc1.64001F", "acodec": "mp4a.40.2"}
+
+    monkeypatch.setattr(m.yt_dlp, "YoutubeDL", Fake)
+    monkeypatch.setattr(m, "validate_url", lambda u: u)
+    caplog.set_level("INFO", logger="uvicorn.error")
+    r = c.post("/api/download", json={"url": "https://www.instagram.com/reel/abc/"})
+    assert r.status_code == 200
+    assert seen["format_sort"][:2] == ["vcodec:h264", "acodec:aac"]
+    assert "avc1.64001F" in caplog.text and "abc.mp4" in caplog.text

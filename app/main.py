@@ -138,14 +138,16 @@ async def download(body: UrlBody, request: Request, bg: BackgroundTasks):
     def run():
         opts = _opts(
             outtmpl=str(tmp / "%(id)s.%(ext)s"),
-            format="bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/bv*+ba/b",
+            format="bv*+ba/b",
+            # iPhone Fotoğraflar VP9/AV1 kaydetmiyor: H.264 + AAC tercih edilir
+            format_sort=["vcodec:h264", "acodec:aac", "ext:mp4:m4a"],
             merge_output_format="mp4",
         )
         with yt_dlp.YoutubeDL(opts) as ydl:
-            ydl.extract_info(url, download=True)
+            return ydl.extract_info(url, download=True)
 
     try:
-        await asyncio.to_thread(run)
+        data = await asyncio.to_thread(run) or {}
         files = [f for f in tmp.iterdir() if f.is_file()]
         if not files:
             raise RuntimeError("no file")
@@ -155,6 +157,8 @@ async def download(body: UrlBody, request: Request, bg: BackgroundTasks):
 
     bg.add_task(shutil.rmtree, tmp, True)
     f = files[0]
+    log.info("İndirildi: %s (%.1f MB, görüntü %s, ses %s)", f.name,
+             f.stat().st_size / 1e6, data.get("vcodec"), data.get("acodec"))
     media = mimetypes.guess_type(f.name)[0] or "application/octet-stream"
     return FileResponse(f, filename=f.name, media_type=media)
 
