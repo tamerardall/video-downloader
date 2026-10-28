@@ -1,6 +1,7 @@
 const $ = (id) => document.getElementById(id);
 const f = $("f"), msg = $("msg"), go = $("go"), tok = $("token"), url = $("url"), paste = $("paste"),
-  preview = $("preview"), pTitle = $("p-title"), pMeta = $("p-meta"), settings = $("settings");
+  frame = $("frame"), img = $("p-img"), empty = $("p-empty"), cap = $("p-cap"), settings = $("settings");
+const EMPTY = empty.textContent;
 try { tok.value = localStorage.getItem("vd_token") || ""; } catch {}
 settings.open = !tok.value;
 
@@ -9,7 +10,7 @@ const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(
 const status = (text, kind = "") => { msg.textContent = text; msg.className = kind; };
 const saveToken = () => { try { localStorage.setItem("vd_token", tok.value); } catch {} };
 const errorText = async (r) => {
-  if (r.status === 401) { settings.open = true; return "Erişim anahtarı gerekli veya hatalı (Ayarlar)."; }
+  if (r.status === 401) { settings.open = true; return "Erişim anahtarı eksik ya da yanlış. Ayarlar'dan gir."; }
   try { return (await r.json()).detail || "Hata"; } catch { return "Hata"; }
 };
 
@@ -18,25 +19,34 @@ let lastQueried = "", timer, ctrl;
 function schedulePreview() {
   clearTimeout(timer);
   const u = url.value.trim();
-  if (!u || !url.checkValidity()) { preview.hidden = true; lastQueried = ""; return; }
+  if (!u || !url.checkValidity()) { resetFrame(); lastQueried = ""; return; }
   if (u === lastQueried) return;
   timer = setTimeout(() => loadPreview(u), 500);
+}
+function resetFrame(text = EMPTY) {
+  frame.classList.remove("loading"); img.hidden = true; img.removeAttribute("src");
+  cap.hidden = true; empty.hidden = false; empty.textContent = text;
 }
 async function loadPreview(u) {
   lastQueried = u;
   ctrl?.abort(); ctrl = new AbortController();
-  preview.hidden = false; preview.className = "loading"; pTitle.textContent = "Bilgi alınıyor…"; pMeta.textContent = "";
+  resetFrame("Video bilgisi alınıyor…"); frame.classList.add("loading");
   try {
     const r = await fetch("/api/info", {method: "POST", headers: headers(), body: JSON.stringify({url: u}), signal: ctrl.signal});
     if (!r.ok) throw new Error(await errorText(r));
     const d = await r.json();
-    preview.className = "";
     if (msg.className === "err") status("");
-    pTitle.textContent = d.title || "Başlıksız video";
-    pMeta.textContent = [d.uploader, d.duration && fmt(d.duration), d.extractor].filter(Boolean).join(" · ");
+    frame.classList.remove("loading");
+    if (d.thumbnail) { img.src = d.thumbnail; img.hidden = false; empty.hidden = true; }
+    else empty.textContent = "Küçük resim yok";
+    $("p-title").textContent = d.title || "Başlıksız video";
+    $("p-up").textContent = d.uploader || "";
+    $("p-dur").textContent = d.duration ? fmt(d.duration) : "";
+    $("p-src").textContent = d.extractor || "";
+    cap.hidden = false;
   } catch (err) {
     if (err.name === "AbortError") return;
-    preview.hidden = true;
+    resetFrame("Bu link için önizleme alınamadı. İndir'i yine de deneyebilirsin.");
     if (!go.disabled) status(err.message, "err");
   }
 }
@@ -47,13 +57,13 @@ if (navigator.clipboard?.readText) {
   paste.hidden = false;
   paste.addEventListener("click", async () => {
     try { url.value = (await navigator.clipboard.readText()).trim(); schedulePreview(); url.focus(); }
-    catch { status("Pano okunamadı, linki elle yapıştır.", "err"); }
+    catch { status("Pano okunamadı. Linki alana elle yapıştır.", "err"); }
   });
 }
 
 f.addEventListener("submit", async (e) => {
   e.preventDefault();
-  go.disabled = true;
+  go.disabled = true; frame.classList.add("rolling");
   const start = Date.now(), tick = () => status(`İndiriliyor… ${fmt((Date.now() - start) / 1000)}`, "loading");
   tick(); const clock = setInterval(tick, 1000);
   try {
@@ -64,8 +74,8 @@ f.addEventListener("submit", async (e) => {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(await r.blob()); a.download = name; a.click();
     URL.revokeObjectURL(a.href);
-    status(`Tamam ✓ ${fmt((Date.now() - start) / 1000)} sürdü`, "ok");
+    status(`İndirildi, ${fmt((Date.now() - start) / 1000)} sürdü.`, "ok");
   } catch (err) { status(err.message, "err"); }
   clearInterval(clock);
-  go.disabled = false;
+  go.disabled = false; frame.classList.remove("rolling");
 });

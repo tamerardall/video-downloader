@@ -1,30 +1,55 @@
-:root{--bg:#f4f4f5;--card:#fff;--fg:#111;--mut:#666;--acc:#2563eb;--acc-fg:#fff;--bd:#d4d4d8;--ok:#15803d;--err:#b91c1c;--ring:#93c5fd}
-@media(prefers-color-scheme:dark){:root{--bg:#0b0b0c;--card:#18181b;--fg:#eee;--mut:#a1a1aa;--acc:#3b82f6;--bd:#333;--ok:#4ade80;--err:#f87171;--ring:#1d4ed8}}
+@font-face{font-family:Bricolage;font-weight:200 800;font-display:swap;src:url(fonts/bricolage-latin.woff2) format("woff2");
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:Bricolage;font-weight:200 800;font-display:swap;src:url(fonts/bricolage-latin-ext.woff2) format("woff2");
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+/* Montaj masası: ışıklı tabla zemini, film şeridi, kayıt kırmızısı */
+:root{--bg:#E9EEF2;--ink:#1A2330;--mut:#5B6878;--rec:#D0342C;--rec-fg:#fff;--ok:#1F7A4D;--err:#B42318;
+  --film:#1A2330;--gate:#0E141C;--on-film:#E9EEF2;--on-film-mut:#9AA6B4;--ring:#D0342C}
+@media(prefers-color-scheme:dark){:root{--bg:#141A22;--ink:#E6EBF0;--mut:#93A0AF;--rec:#FF5A4E;--rec-fg:#141A22;--ok:#5FD39A;--err:#FF8A80;
+  --film:#2E3A49;--gate:#0B1016;--on-film:#E6EBF0;--on-film-mut:#93A0AF;--ring:#FF5A4E}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-body{margin:0;min-height:100vh;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;
-  padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
-.card{max-width:560px;margin:10vh auto 0;padding:24px;background:var(--card);border:1px solid var(--bd);border-radius:16px}
-h1{margin:0 0 4px;font-size:1.6rem;letter-spacing:-.01em}.sub{color:var(--mut);margin:0 0 20px}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif;
+  padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+main{max-width:600px;margin:8vh auto 0}
+h1{margin:0;font:800 clamp(2.6rem,11vw,4.25rem)/.92 Bricolage,system-ui,sans-serif;letter-spacing:-.035em}
+.sub{margin:10px 0 28px;color:var(--mut);font-size:1.05rem}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
-form{display:flex;gap:8px;flex-wrap:wrap}
-.field{flex:1 1 260px;display:flex;position:relative}
-input{width:100%;min-height:48px;padding:12px;border:1px solid var(--bd);border-radius:10px;background:transparent;color:inherit;font:inherit}
-.field:has(#paste:not([hidden])) input{padding-right:96px}
-button{min-height:48px;padding:12px 22px;border:0;border-radius:10px;background:var(--acc);color:var(--acc-fg);font:inherit;font-weight:600;cursor:pointer}
-button:disabled{opacity:.6;cursor:wait}
-button.ghost{position:absolute;right:4px;top:4px;min-height:40px;padding:8px 12px;background:transparent;color:var(--acc)}
-:focus-visible{outline:3px solid var(--ring);outline-offset:2px}
-input:focus-visible{outline-offset:0;border-color:var(--acc)}
-@media(max-width:480px){#go{flex:1 1 100%}.card{margin-top:4vh;padding:20px}}
-#preview{margin-top:16px;padding:12px 14px;border:1px solid var(--bd);border-radius:10px;display:grid;gap:2px}
-#preview.loading{color:var(--mut)}
-#p-title{overflow-wrap:anywhere}#p-meta{color:var(--mut);font-size:.9rem}
-#msg{min-height:1.5em;margin:16px 0 0;color:var(--mut);display:flex;align-items:center;gap:8px}
+
+form{display:grid;gap:10px}
+.field{position:relative}
+input{width:100%;min-height:56px;padding:14px 16px;border:2px solid var(--ink);border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:1.05rem}
+input::placeholder{color:var(--mut)}
+.field:has(#paste:not([hidden])) input{padding-right:104px}
+button{min-height:56px;padding:12px 22px;border:0;border-radius:10px;background:var(--rec);color:var(--rec-fg);
+  font:700 1.15rem Bricolage,system-ui,sans-serif;letter-spacing:-.01em;cursor:pointer}
+button:disabled{opacity:.7;cursor:wait}
+button.ghost{position:absolute;right:6px;top:6px;min-height:44px;padding:8px 14px;background:transparent;color:var(--ink);font-size:1rem;text-decoration:underline;text-underline-offset:3px}
+:focus-visible{outline:3px solid var(--ring);outline-offset:3px}
+input:focus-visible{outline-offset:2px}
+
+/* Film karesi: üstte ve altta delik şeridi; indirirken şerit kayar */
+#frame{position:relative;margin:28px 0 0;padding:22px 12px 14px;background:var(--film);color:var(--on-film);border-radius:4px}
+#frame::before,#frame::after{content:"";position:absolute;left:12px;right:12px;height:7px;
+  background:repeating-linear-gradient(90deg,var(--bg) 0 9px,transparent 9px 22px)}
+#frame::before{top:8px}#frame::after{bottom:8px}
+#frame.rolling::before,#frame.rolling::after{animation:roll .5s linear infinite}
+@keyframes roll{to{background-position:22px 0}}
+@media(prefers-reduced-motion:reduce){#frame.rolling::before,#frame.rolling::after{animation:none}}
+.gate{aspect-ratio:16/9;background:var(--gate);display:grid;place-items:center;overflow:hidden}
+#p-img{width:100%;height:100%;object-fit:contain}
+#p-empty{margin:0;padding:0 24px;max-width:36ch;text-align:center;color:var(--on-film-mut)}
+#frame.loading #p-empty{opacity:.6}
+figcaption{padding:12px 4px 10px}
+#p-title{display:block;font:700 1.15rem/1.25 Bricolage,system-ui,sans-serif;overflow-wrap:anywhere}
+.meta{display:flex;flex-wrap:wrap;gap:4px 20px;margin-top:4px;color:var(--on-film-mut);font-size:.9rem}
+.meta span:empty{display:none}
+#p-dur{font-variant-numeric:tabular-nums}
+
+#msg{margin:16px 0 0;color:var(--mut);font-variant-numeric:tabular-nums}
+#msg:empty{display:none}
 #msg.ok{color:var(--ok)}#msg.err{color:var(--err)}
-#msg.loading::before{content:"";width:16px;height:16px;flex:none;border:2px solid var(--bd);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-@media(prefers-reduced-motion:reduce){#msg.loading::before{animation-duration:3s}}
-details{margin-top:20px;border-top:1px solid var(--bd);padding-top:12px}
-summary{cursor:pointer;color:var(--mut);min-height:44px;display:flex;align-items:center}
-details label{display:block;font-size:.9rem;color:var(--mut);margin:4px 0}
+details{margin-top:32px}
+summary{cursor:pointer;color:var(--mut);padding:10px 0}
+details label{display:block;font-size:.9rem;color:var(--mut);margin:4px 0 6px}
+details input{border-width:1px;min-height:48px}

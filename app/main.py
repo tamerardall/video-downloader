@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .security import InvalidURL, RateLimiter, validate_url
+from .thumbnail import fetch_thumbnail
 
 STATIC = Path(__file__).parent / "static"
 MAX_FILESIZE = 500 * 1024 * 1024  # 500 MB
@@ -80,6 +81,7 @@ async def info(body: UrlBody, request: Request):
         "uploader": data.get("uploader"),
         "duration": data.get("duration"),
         "extractor": data.get("extractor_key"),
+        "thumbnail": await asyncio.to_thread(fetch_thumbnail, data.get("thumbnail")),
     }
 
 

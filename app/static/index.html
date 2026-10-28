@@ -5,24 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <title>Video İndirici</title>
+<link rel="preload" href="fonts/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main class="card">
+<main>
   <h1>Video İndirici</h1>
-  <p class="sub">Reklamsız, takipsiz. Linki yapıştır, indir.</p>
+  <p class="sub">Reklamsız, takipsiz.</p>
   <form id="f">
     <div class="field">
       <label for="url" class="sr">Video linki</label>
-      <input id="url" type="url" inputmode="url" required placeholder="https://www.tiktok.com/@kullanici/video/..." autocomplete="off" autocapitalize="off" spellcheck="false">
+      <input id="url" type="url" inputmode="url" required placeholder="Video linki" autocomplete="off" autocapitalize="off" spellcheck="false">
       <button id="paste" type="button" class="ghost" hidden>Yapıştır</button>
     </div>
     <button id="go" type="submit">İndir</button>
   </form>
-  <section id="preview" hidden aria-live="polite">
-    <strong id="p-title"></strong>
-    <span id="p-meta"></span>
-  </section>
+  <figure id="frame" aria-live="polite">
+    <div class="gate">
+      <img id="p-img" alt="" hidden>
+      <p id="p-empty">TikTok, Instagram, YouTube, X ve diğer sitelerden bir video linki yapıştır.</p>
+    </div>
+    <figcaption id="p-cap" hidden>
+      <strong id="p-title"></strong>
+      <span class="meta"><span id="p-up"></span><span id="p-dur"></span><span id="p-src"></span></span>
+    </figcaption>
+  </figure>
   <p id="msg" role="status" aria-live="polite"></p>
   <details id="settings">
     <summary>Ayarlar</summary>
