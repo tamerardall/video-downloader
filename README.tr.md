@@ -54,7 +54,7 @@ Tüm ayarlar proje klasöründeki `.env` dosyasında (ilk çalıştırmada `.env
 | `API_TOKEN` | boş | Tanımlıysa her `/api/*` isteği `Authorization: Bearer <anahtar>` ister. `HOST` `127.0.0.1` değilse **zorunlu**. |
 | `COOKIES_FROM_BROWSER` | boş | Giriş çerezlerini tarayıcıdan oku: `firefox`, `chrome`, `brave`, `edge`, `safari`, ... ya da `tarayıcı:/profil/yolu`. |
 | `COOKIES_FILE` | boş | Netscape formatında `cookies.txt` dosyasının yolu. |
-| `ALLOWED_DOMAINS` | yaygın siteler | İzin verilen siteler, virgülle ayrılmış. |
+| `ALLOWED_DOMAINS` | boş | İzin verilen siteler, virgülle ayrılmış. Boşsa her genel site çalışır (yt-dlp'nin genel çıkarıcısı, kendi çıkarıcısı olmayan sayfalardaki videoları da bulmaya çalışır). |
 
 `API_TOKEN` üretmek için:
 
@@ -162,7 +162,9 @@ Uygulamanın çalıştığı terminal her isteği yazar:
 
 ## Güvenlik
 
-- Yalnızca izin verilen sitelere giden http/https linkleri kabul edilir; kullanıcı bilgisi içeren linkler ve yerel/özel IP'ler (SSRF) reddedilir. Site listesini `ALLOWED_DOMAINS` ile değiştirebilirsin.
+- Yalnızca http/https linkleri kabul edilir; kullanıcı bilgisi içeren linkler ve yerel/özel IP'ler (SSRF) reddedilir. Varsayılan olarak her genel site serbesttir; kısıtlamak için `ALLOWED_DOMAINS` ayarla.
+- İndirmeden önce yt-dlp'nin bulduğu medya adresleri de denetlenir, yerel/özel sunuculara çıkıyorsa reddedilir. Kapsam dışı: `m3u8`/DASH manifestlerinin içindeki segment adresleri, yt-dlp sayfayı okurken izlediği yönlendirme ve gömülü bağlantılar, denetim ile indirme arasında DNS'in değişmesi. `HOST=127.0.0.1` bırak ya da `API_TOKEN` ayarla.
+- DRM korumalı servisler (Netflix, Disney+ vb.) çalışmaz; uygulama DRM'i aşmaya çalışmaz.
 - IP başına dakikada 10 istek, dosya başına en çok 500 MB. İndirmeler geçici bir klasörde tutulur ve gönderildikten sonra silinir.
 - Web arayüzü harici script, font ya da takipçi yüklemez (sıkı CSP). Küçük resimleri sunucu alır; tarayıcın video CDN'ine hiç bağlanmaz.
 - `API_TOKEN` tanımlıysa her `/api/*` isteği `Authorization: Bearer <anahtar>` ister (sabit zamanlı karşılaştırma).
