@@ -49,6 +49,7 @@ def test_login_required_message(monkeypatch):
         def __init__(self, *a, **k): pass
         def __enter__(self): return self
         def __exit__(self, *a): pass
+        def add_post_processor(self, *a, **k): pass
         def extract_info(self, *a, **k):
             raise yt_dlp.utils.DownloadError(
                 "ERROR: [Instagram] x: Instagram sent an empty media response. "
@@ -70,6 +71,7 @@ def test_ytdlp_error_shown_and_logged(monkeypatch, caplog):
         def __init__(self, *a, **k): pass
         def __enter__(self): return self
         def __exit__(self, *a): pass
+        def add_post_processor(self, *a, **k): pass
         def extract_info(self, *a, **k):
             raise yt_dlp.utils.DownloadError(
                 "\x1b[0;31mERROR:\x1b[0m [Instagram] abc: HTTP Error 400: Bad Request")
@@ -96,6 +98,7 @@ def test_url_extracted_from_shared_text(monkeypatch):
         def __init__(self, *a, **k): pass
         def __enter__(self): return self
         def __exit__(self, *a): pass
+        def add_post_processor(self, *a, **k): pass
         def extract_info(self, *a, **k): raise RuntimeError("x")
 
     monkeypatch.setattr(m.yt_dlp, "YoutubeDL", Fake)
@@ -131,6 +134,7 @@ def test_download_prefers_iphone_codecs_and_logs(monkeypatch, caplog):
         def __init__(self, opts): seen.update(opts)
         def __enter__(self): return self
         def __exit__(self, *a): pass
+        def add_post_processor(self, *a, **k): pass
         def extract_info(self, *a, **k):
             out = Path(seen["outtmpl"]).parent / "abc.mp4"
             out.write_bytes(b"x" * 10)
@@ -207,3 +211,60 @@ def test_dotenv_loaded(tmp_path):
     out = subprocess.run([sys.executable, "-c", code], cwd=root, env=env,
                          capture_output=True, text=True, check=True).stdout.strip()
     assert out == str(root / ".env")
+
+
+def test_guard_rejects_private_requested_format():
+    import pytest
+    from yt_dlp.utils import PostProcessingError
+    from app.main import MediaUrlGuard
+
+    info = {"requested_formats": [{"url": "https://93.184.216.34/v"}, {"url": "http://10.0.0.5/a"}]}
+    with pytest.raises(PostProcessingError):
+        MediaUrlGuard().run(info)
+
+
+def test_guard_checks_url_when_not_merged():
+    import pytest
+    from yt_dlp.utils import PostProcessingError
+    from app.main import MediaUrlGuard
+
+    with pytest.raises(PostProcessingError):
+        MediaUrlGuard().run({"url": "http://127.0.0.1/a"})
+
+
+def test_guard_skips_format_without_url():
+    from app.main import MediaUrlGuard
+
+    info = {"requested_formats": [{"format_id": "x"}]}
+    assert MediaUrlGuard().run(info) == ([], info)
+
+
+def test_guard_allows_public_formats(monkeypatch):
+    import app.main as m
+
+    monkeypatch.setattr(m, "check_media_url", lambda u: u)
+    info = {"requested_formats": [{"url": "https://cdn.example.org/v"}]}
+    assert m.MediaUrlGuard().run(info) == ([], info)
+
+
+def test_download_registers_guard(monkeypatch):
+    import app.main as m
+    from pathlib import Path
+    added = []
+    seen = {}
+
+    class Fake:
+        def __init__(self, opts): seen.update(opts)
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def add_post_processor(self, pp, when=None): added.append((pp, when))
+        def extract_info(self, *a, **k):
+            (Path(seen["outtmpl"]).parent / "abc.mp4").write_bytes(b"x")
+            return {}
+
+    monkeypatch.setattr(m.yt_dlp, "YoutubeDL", Fake)
+    monkeypatch.setattr(m, "validate_url", lambda u: u)
+    r = c.post("/api/download", json={"url": "https://example.org/page"})
+    assert r.status_code == 200
+    assert len(added) == 1
+    assert isinstance(added[0][0], m.MediaUrlGuard) and added[0][1] == "before_dl"

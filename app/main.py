@@ -16,8 +16,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from yt_dlp.postprocessor.common import PostProcessor
+from yt_dlp.utils import PostProcessingError
 
-from .security import InvalidURL, RateLimiter, validate_url
+from .security import InvalidURL, RateLimiter, check_media_url, validate_url
 from .thumbnail import fetch_thumbnail
 
 log = logging.getLogger("uvicorn.error")  # shows up in the uvicorn terminal
@@ -125,6 +127,24 @@ def _error(e: Exception, default: str) -> str:
     return f"{default} ({msg[:300]})" if msg else default
 
 
+class MediaUrlGuard(PostProcessor):
+    """Runs after yt-dlp picked the formats and before it downloads anything: refuses
+    media URLs that point at local/private hosts (the generic extractor follows links
+    found inside arbitrary pages)."""
+
+    def run(self, info):
+        for fmt in info.get("requested_formats") or [info]:
+            url = fmt.get("url")
+            if not url:
+                continue
+            try:
+                check_media_url(url)
+            except InvalidURL as e:
+                log.warning("Media URL rejected: %s (%r)", e, url[:200])
+                raise PostProcessingError(f"Blocked media URL: {e}")
+        return [], info
+
+
 @app.post("/api/info")
 async def info(body: UrlBody, request: Request):
     url = _check(request, body.url)
@@ -159,6 +179,7 @@ async def download(body: UrlBody, request: Request, bg: BackgroundTasks):
             merge_output_format="mp4",
         )
         with yt_dlp.YoutubeDL(opts) as ydl:
+            ydl.add_post_processor(MediaUrlGuard(), when="before_dl")
             return ydl.extract_info(url, download=True)
 
     try:

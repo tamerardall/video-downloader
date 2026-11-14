@@ -54,7 +54,7 @@ All settings live in the `.env` file in the project folder (created from `.env.e
 | `API_TOKEN` | empty | If set, every `/api/*` request needs `Authorization: Bearer <token>`. **Required** when `HOST` is not `127.0.0.1`. |
 | `COOKIES_FROM_BROWSER` | empty | Read login cookies from a browser: `firefox`, `chrome`, `brave`, `edge`, `safari`, ... or `browser:/path/to/profile`. |
 | `COOKIES_FILE` | empty | Path to a Netscape-format `cookies.txt`. |
-| `ALLOWED_DOMAINS` | common sites | Comma-separated list of allowed sites. |
+| `ALLOWED_DOMAINS` | empty | Comma-separated list of allowed sites. Empty means any public site works (yt-dlp's generic extractor finds videos on pages it has no dedicated extractor for). |
 
 Generate an `API_TOKEN`:
 
@@ -162,7 +162,9 @@ The terminal running the app logs every request:
 
 ## Security
 
-- Only http/https links to allowed sites are accepted; links with credentials and local/private IPs (SSRF) are rejected. Change the site list with `ALLOWED_DOMAINS`.
+- Only http/https links are accepted; links with credentials and local/private IPs (SSRF) are rejected. Any public site is allowed by default; set `ALLOWED_DOMAINS` to restrict it.
+- Before downloading, the media URLs yt-dlp found are checked too and refused if they point at local/private hosts. Not covered: segment URLs inside `m3u8`/DASH manifests, redirects and embedded links followed while yt-dlp reads a page, and DNS changes between the check and the download. Keep `HOST=127.0.0.1` or set an `API_TOKEN`.
+- DRM-protected services (Netflix, Disney+, ...) don't work; the app doesn't try to bypass DRM.
 - 10 requests per minute per IP, at most 500 MB per file. Downloads are kept in a temporary folder and deleted after sending.
 - The web UI loads no external scripts, fonts or trackers (strict CSP). Thumbnails are fetched by the server, so your browser never contacts the video CDN.
 - With `API_TOKEN` set, every `/api/*` request needs `Authorization: Bearer <token>` (constant-time comparison).
