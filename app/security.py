@@ -6,15 +6,12 @@ import time
 from collections import defaultdict, deque
 from urllib.parse import urlparse
 
-DEFAULT_ALLOWED = (
-    "tiktok.com,instagram.com,youtube.com,youtu.be,twitter.com,x.com,"
-    "facebook.com,fb.watch,reddit.com,vimeo.com,pinterest.com,twitch.tv"
-)
-ALLOWED_DOMAINS = tuple(
-    d.strip().lower()
-    for d in os.environ.get("ALLOWED_DOMAINS", DEFAULT_ALLOWED).split(",")
-    if d.strip()
-)
+# Empty (the default) means every public site is allowed; set it to restrict.
+def _parse_domains(raw: str | None) -> tuple[str, ...]:
+    return tuple(d.strip().lower() for d in (raw or "").split(",") if d.strip())
+
+
+ALLOWED_DOMAINS = _parse_domains(os.environ.get("ALLOWED_DOMAINS"))
 MAX_URL_LEN = 2048
 
 
@@ -23,6 +20,8 @@ class InvalidURL(ValueError):
 
 
 def _domain_allowed(host: str) -> bool:
+    if not ALLOWED_DOMAINS:
+        return True
     return any(host == d or host.endswith("." + d) for d in ALLOWED_DOMAINS)
 
 
@@ -31,7 +30,7 @@ def _is_public_ip(ip: str) -> bool:
     return addr.is_global and not addr.is_multicast
 
 
-def validate_url(url: str, resolve: bool = True) -> str:
+def _check_public_http(url: str, resolve: bool, check_site: bool) -> str:
     if not url or len(url) > MAX_URL_LEN:
         raise InvalidURL("Invalid URL.")
     parsed = urlparse(url.strip())
@@ -42,7 +41,7 @@ def validate_url(url: str, resolve: bool = True) -> str:
     host = (parsed.hostname or "").lower().rstrip(".")
     if not host:
         raise InvalidURL("Invalid URL.")
-    if not _domain_allowed(host):
+    if check_site and not _domain_allowed(host):
         raise InvalidURL("This site is not supported (see ALLOWED_DOMAINS).")
     if resolve:
         try:
@@ -52,6 +51,16 @@ def validate_url(url: str, resolve: bool = True) -> str:
         if not all(_is_public_ip(i[4][0]) for i in infos):
             raise InvalidURL("Local/private addresses are not allowed.")
     return url.strip()
+
+
+def validate_url(url: str, resolve: bool = True) -> str:
+    return _check_public_http(url, resolve, check_site=True)
+
+
+def check_media_url(url: str, resolve: bool = True) -> str:
+    """Validate a media URL found by the extractor (CDNs live on other domains,
+    so ALLOWED_DOMAINS is not applied)."""
+    return _check_public_http(url, resolve, check_site=False)
 
 
 class RateLimiter:
